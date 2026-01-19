@@ -121,8 +121,16 @@ func runCreate(root string, args []string) {
 // runList handles pb list.
 func runList(root string, args []string) {
 	fs := flag.NewFlagSet("list", flag.ExitOnError)
+	status := fs.String("status", "", "Filter by status (comma-separated)")
+	issueType := fs.String("type", "", "Filter by issue type (comma-separated)")
+	priority := fs.String("priority", "", "Filter by priority (P0-P4, comma-separated)")
 	_ = fs.Parse(args)
+	// Validate the project and requested filters before listing.
 	if err := ensureProject(root); err != nil {
+		exitError(err)
+	}
+	filters, err := parseListFilters(*status, *issueType, *priority)
+	if err != nil {
 		exitError(err)
 	}
 	issues, err := pebbles.ListIssueHierarchy(root)
@@ -131,6 +139,9 @@ func runList(root string, args []string) {
 	}
 	widths := issueColumnWidthsForHierarchy(issues)
 	for _, item := range issues {
+		if !filters.matches(item.Issue) {
+			continue
+		}
 		fmt.Println(formatIssueLine(item.Issue, item.Depth, widths))
 	}
 }
@@ -616,6 +627,139 @@ func printUsage() {
 	fmt.Println("Styling:")
 	fmt.Println("  list/show output uses ANSI colors when stdout is a TTY.")
 	fmt.Println("  Set NO_COLOR=1 or PB_NO_COLOR=1 to disable.")
+}
+
+// listFilters holds optional filters for pb list output.
+type listFilters struct {
+	statuses   map[string]bool
+	types      map[string]bool
+	priorities map[int]bool
+}
+
+// parseListFilters builds the filter set for pb list.
+func parseListFilters(statusInput, typeInput, priorityInput string) (listFilters, error) {
+	statuses, err := parseListStatusFilter(statusInput)
+	if err != nil {
+		return listFilters{}, err
+	}
+	priorities, err := parseListPriorityFilter(priorityInput)
+	if err != nil {
+		return listFilters{}, err
+	}
+	return listFilters{
+		statuses:   statuses,
+		types:      parseListTypeFilter(typeInput),
+		priorities: priorities,
+	}, nil
+}
+
+// parseListStatusFilter validates and normalizes status filters.
+func parseListStatusFilter(input string) (map[string]bool, error) {
+	values := splitCSV(input)
+	if len(values) == 0 {
+		return nil, nil
+	}
+	allowed := map[string]bool{
+		pebbles.StatusOpen:       true,
+		pebbles.StatusInProgress: true,
+		pebbles.StatusClosed:     true,
+	}
+	statuses := make(map[string]bool, len(values))
+	// Normalize and validate each status value.
+	for _, value := range values {
+		normalized := normalizeStatusFilter(value)
+		if normalized == "" {
+			continue
+		}
+		if !allowed[normalized] {
+			return nil, fmt.Errorf("unknown status: %s", value)
+		}
+		statuses[normalized] = true
+	}
+	if len(statuses) == 0 {
+		return nil, nil
+	}
+	return statuses, nil
+}
+
+// parseListTypeFilter normalizes the type filter to lowercase.
+func parseListTypeFilter(input string) map[string]bool {
+	values := splitCSV(input)
+	if len(values) == 0 {
+		return nil
+	}
+	types := make(map[string]bool, len(values))
+	// Normalize types to lowercase for case-insensitive matching.
+	for _, value := range values {
+		normalized := strings.ToLower(strings.TrimSpace(value))
+		if normalized == "" {
+			continue
+		}
+		types[normalized] = true
+	}
+	if len(types) == 0 {
+		return nil
+	}
+	return types
+}
+
+// parseListPriorityFilter parses priority filters into numeric values.
+func parseListPriorityFilter(input string) (map[int]bool, error) {
+	values := splitCSV(input)
+	if len(values) == 0 {
+		return nil, nil
+	}
+	priorities := make(map[int]bool, len(values))
+	// Parse each priority entry into its numeric form.
+	for _, value := range values {
+		priority, err := pebbles.ParsePriority(value)
+		if err != nil {
+			return nil, err
+		}
+		priorities[priority] = true
+	}
+	if len(priorities) == 0 {
+		return nil, nil
+	}
+	return priorities, nil
+}
+
+// matches reports whether an issue passes the configured filters.
+func (filters listFilters) matches(issue pebbles.Issue) bool {
+	if filters.statuses != nil && !filters.statuses[issue.Status] {
+		return false
+	}
+	if filters.types != nil && !filters.types[strings.ToLower(issue.IssueType)] {
+		return false
+	}
+	if filters.priorities != nil && !filters.priorities[issue.Priority] {
+		return false
+	}
+	return true
+}
+
+// splitCSV breaks a comma-separated string into trimmed values.
+func splitCSV(input string) []string {
+	if strings.TrimSpace(input) == "" {
+		return nil
+	}
+	parts := strings.Split(input, ",")
+	values := make([]string, 0, len(parts))
+	// Trim each entry and drop empty segments.
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		values = append(values, trimmed)
+	}
+	return values
+}
+
+// normalizeStatusFilter allows hyphenated status names in filters.
+func normalizeStatusFilter(input string) string {
+	trimmed := strings.ToLower(strings.TrimSpace(input))
+	return strings.ReplaceAll(trimmed, "-", "_")
 }
 
 // exitError prints an error to stderr and exits.

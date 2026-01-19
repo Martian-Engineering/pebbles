@@ -73,11 +73,32 @@ pb log --limit 20
 pb log --table --limit 20
 ```
 
+## Listing Issues
+
+`pb list` prints issues in parent-child order (children are indented two spaces per
+depth) with the line format:
+
+```
+○ pb-abc [● P2] [task] - Title
+```
+
+Filtering flags (comma-separated, case-insensitive):
+
+- `--status`: `open`, `in_progress`, `closed` (hyphens are accepted, e.g. `in-progress`)
+- `--type`: issue type values like `task` or `epic`
+- `--priority`: `P0`-`P4` (or `0`-`4`)
+
+Examples:
+
+```bash
+pb list --status open
+pb list --status open,in_progress --type task
+pb list --priority P0,P1
+```
 ## Styling
 
 `pb list` and `pb show` use ANSI colors when stdout is a TTY. Set `NO_COLOR=1`
 or `PB_NO_COLOR=1` to disable.
-
 ## Log Output
 
 `pb log` prints a multi-line, human-friendly block per event (newest-first by
