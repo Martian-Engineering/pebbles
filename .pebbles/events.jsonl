@@ -118,3 +118,6 @@
 {"type":"close","timestamp":"2026-01-19T19:38:08.85209Z","issue_id":"pb-c90","payload":{}}
 {"type":"close","timestamp":"2026-01-19T19:38:15.350289Z","issue_id":"pb-485","payload":{}}
 {"type":"close","timestamp":"2026-01-19T19:38:19.888315Z","issue_id":"pb-6fe","payload":{}}
+{"type":"create","timestamp":"2026-01-19T19:43:01.387759Z","issue_id":"pb-903","payload":{"description":"Pretty/table pb log output omits create-event descriptions; include description in log details so users can see issue context.","priority":"2","title":"pb log should include descriptions","type":"bug"}}
+{"type":"status_update","timestamp":"2026-01-19T19:43:08.315316Z","issue_id":"pb-903","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T19:44:05.321792Z","issue_id":"pb-903","payload":{}}

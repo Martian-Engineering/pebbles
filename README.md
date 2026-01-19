@@ -88,7 +88,7 @@ Use `--table` for the compact column view:
 
 Details are rendered per event type:
 
-- create: `type=<issue_type> priority=<P0-P4>`
+- create: `type=<issue_type> priority=<P0-P4> description="<text>"`
 - status_update: `status=<status>`
 - dep_add/dep_rm: `depends_on=<issue_id>`
 - unknown types: payload key/value pairs ordered as `title`, `description`,
