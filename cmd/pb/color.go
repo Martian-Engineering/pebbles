@@ -18,6 +18,7 @@ const (
 	ansiCyan          = "\x1b[36m"
 	ansiGray          = "\x1b[90m"
 	ansiBrightRed     = "\x1b[91m"
+	ansiBrightGreen   = "\x1b[92m"
 	ansiBrightYellow  = "\x1b[93m"
 	ansiBrightBlue    = "\x1b[94m"
 	ansiBrightMagenta = "\x1b[95m"
@@ -50,7 +51,7 @@ func statusColor(status string) string {
 	case pebbles.StatusInProgress:
 		return ansiBrightYellow
 	case pebbles.StatusClosed:
-		return ansiGray
+		return ansiBrightGreen
 	default:
 		return ""
 	}

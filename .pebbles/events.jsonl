@@ -164,3 +164,5 @@
 {"type":"create","timestamp":"2026-01-19T21:49:36.276053Z","issue_id":"pb-2f1","payload":{"description":"Colored output makes the status dot hard to see in list mode. Adjust styling so open/in_progress/closed dots remain visible.","priority":"2","title":"Fix pb list status dot visibility with colors","type":"bug"}}
 {"type":"status_update","timestamp":"2026-01-19T21:54:00.905122Z","issue_id":"pb-2f1","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-19T21:55:40.260059Z","issue_id":"pb-2f1","payload":{}}
+{"type":"status_update","timestamp":"2026-01-19T21:57:39.313394Z","issue_id":"pb-2f1","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T21:58:16.912316Z","issue_id":"pb-2f1","payload":{}}
