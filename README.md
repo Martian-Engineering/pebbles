@@ -90,6 +90,7 @@ Details are rendered per event type:
 
 - create: `type=<issue_type> priority=<P0-P4> description="<text>"`
 - status_update: `status=<status>`
+- close: `description="<text>"`
 - dep_add/dep_rm: `depends_on=<issue_id>`
 - unknown types: payload key/value pairs ordered as `title`, `description`,
   `type`, `priority`, `status`, `depends_on`, then alphabetically

@@ -59,8 +59,8 @@ func TestLogEventDetails(t *testing.T) {
 	if got := logEventDetails(depRm); got != "depends_on=pb-2" {
 		t.Fatalf("dep_rm details mismatch: %q", got)
 	}
-	closeEvent := pebbles.Event{Type: pebbles.EventTypeClose}
-	if got := logEventDetails(closeEvent); got != "" {
+	closeEvent := pebbles.Event{Type: pebbles.EventTypeClose, Payload: map[string]string{"description": "Done"}}
+	if got := logEventDetails(closeEvent); got != "description=Done" {
 		t.Fatalf("close details mismatch: %q", got)
 	}
 	unknown := pebbles.Event{
@@ -240,5 +240,15 @@ func TestResolvePagerCommand(t *testing.T) {
 	command = resolvePagerCommand()
 	if len(command) == 0 || command[0] != "less" {
 		t.Fatalf("expected PAGER fallback, got %v", command)
+	}
+}
+
+// TestEnrichEventAddsDescription verifies close events get descriptions.
+func TestEnrichEventAddsDescription(t *testing.T) {
+	descriptions := map[string]string{"pb-1": "Done work"}
+	event := pebbles.Event{Type: pebbles.EventTypeClose, IssueID: "pb-1"}
+	enriched := enrichEvent(event, descriptions)
+	if enriched.Payload == nil || enriched.Payload["description"] != "Done work" {
+		t.Fatalf("expected description to be enriched, got %+v", enriched.Payload)
 	}
 }

@@ -121,3 +121,6 @@
 {"type":"create","timestamp":"2026-01-19T19:43:01.387759Z","issue_id":"pb-903","payload":{"description":"Pretty/table pb log output omits create-event descriptions; include description in log details so users can see issue context.","priority":"2","title":"pb log should include descriptions","type":"bug"}}
 {"type":"status_update","timestamp":"2026-01-19T19:43:08.315316Z","issue_id":"pb-903","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-19T19:44:05.321792Z","issue_id":"pb-903","payload":{}}
+{"type":"create","timestamp":"2026-01-19T19:50:01.552925Z","issue_id":"pb-cea","payload":{"description":"When rendering close events, include the issue description (from current issue state) in pb log details so the log retains context even though close payloads are empty.","priority":"2","title":"pb log: include description on close entries","type":"feature"}}
+{"type":"status_update","timestamp":"2026-01-19T19:50:09.734124Z","issue_id":"pb-cea","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T19:51:54.200416Z","issue_id":"pb-cea","payload":{}}

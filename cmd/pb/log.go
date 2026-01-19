@@ -76,6 +76,22 @@ type gitAttribution struct {
 	Date   string
 }
 
+// enrichEvent overlays issue metadata needed for log output.
+func enrichEvent(event pebbles.Event, descriptions map[string]string) pebbles.Event {
+	if event.Type != pebbles.EventTypeClose {
+		return event
+	}
+	if event.Payload == nil {
+		event.Payload = map[string]string{}
+	}
+	if event.Payload["description"] == "" {
+		if description := descriptionForIssue(descriptions, event.IssueID); description != "" {
+			event.Payload["description"] = description
+		}
+	}
+	return event
+}
+
 // runLog handles pb log.
 func runLog(root string, args []string) {
 	fs := flag.NewFlagSet("log", flag.ExitOnError)
@@ -113,6 +129,10 @@ func runLog(root string, args []string) {
 	if err != nil {
 		exitError(err)
 	}
+	descriptions, err := issueDescriptionMap(root)
+	if err != nil {
+		exitError(err)
+	}
 	logEntries := buildLogEntries(entries)
 	filtered, err := filterLogEntries(logEntries, since, until, useSince, useUntil)
 	if err != nil {
@@ -133,19 +153,20 @@ func runLog(root string, args []string) {
 	// JSON output is streamed directly to stdout (no pager).
 	if *jsonOut {
 		for _, entry := range filtered {
-			attribution := attributionForLine(attributions, entry.Entry.Line)
-			line := logLine{
-				Actor:      attribution.Author,
-				ActorDate:  attribution.Date,
-				EventTime:  formatEventTime(entry),
-				EventType:  logEventLabel(entry.Entry.Event),
-				IssueID:    entry.Entry.Event.IssueID,
-				IssueTitle: titleForIssue(titles, entry.Entry.Event.IssueID),
-				Details:    logEventDetails(entry.Entry.Event),
-			}
-			if err := printLogJSON(entry, line); err != nil {
-				exitError(err)
-			}
+		attribution := attributionForLine(attributions, entry.Entry.Line)
+		event := enrichEvent(entry.Entry.Event, descriptions)
+		line := logLine{
+			Actor:      attribution.Author,
+			ActorDate:  attribution.Date,
+			EventTime:  formatEventTime(entry),
+			EventType:  logEventLabel(event),
+			IssueID:    event.IssueID,
+			IssueTitle: titleForIssue(titles, event.IssueID),
+			Details:    logEventDetails(event),
+		}
+		if err := printLogJSON(entry, line); err != nil {
+			exitError(err)
+		}
 		}
 		return
 	}
@@ -153,14 +174,15 @@ func runLog(root string, args []string) {
 	var output strings.Builder
 	for index, entry := range filtered {
 		attribution := attributionForLine(attributions, entry.Entry.Line)
+		event := enrichEvent(entry.Entry.Event, descriptions)
 		line := logLine{
 			Actor:      attribution.Author,
 			ActorDate:  attribution.Date,
 			EventTime:  formatEventTime(entry),
-			EventType:  logEventLabel(entry.Entry.Event),
-			IssueID:    entry.Entry.Event.IssueID,
-			IssueTitle: titleForIssue(titles, entry.Entry.Event.IssueID),
-			Details:    logEventDetails(entry.Entry.Event),
+			EventType:  logEventLabel(event),
+			IssueID:    event.IssueID,
+			IssueTitle: titleForIssue(titles, event.IssueID),
+			Details:    logEventDetails(event),
 		}
 		// Render the selected view for each entry.
 		if *table {
@@ -195,6 +217,19 @@ func issueTitleMap(root string) (map[string]string, error) {
 	return titles, nil
 }
 
+// issueDescriptionMap builds a map of issue IDs to descriptions for log output.
+func issueDescriptionMap(root string) (map[string]string, error) {
+	issues, err := pebbles.ListIssues(root)
+	if err != nil {
+		return nil, err
+	}
+	descriptions := make(map[string]string, len(issues))
+	for _, issue := range issues {
+		descriptions[issue.ID] = issue.Description
+	}
+	return descriptions, nil
+}
+
 // titleForIssue returns the title for an issue ID or "unknown".
 func titleForIssue(titles map[string]string, issueID string) string {
 	title := titles[issueID]
@@ -202,6 +237,11 @@ func titleForIssue(titles map[string]string, issueID string) string {
 		return "unknown"
 	}
 	return title
+}
+
+// descriptionForIssue returns the description for an issue ID when present.
+func descriptionForIssue(descriptions map[string]string, issueID string) string {
+	return descriptions[issueID]
 }
 
 // buildLogEntries parses timestamps once for sorting/filtering.
@@ -302,6 +342,10 @@ func logEventDetails(event pebbles.Event) string {
 		if status := event.Payload["status"]; status != "" {
 			return fmt.Sprintf("status=%s", status)
 		}
+	case pebbles.EventTypeClose:
+		if description := event.Payload["description"]; description != "" {
+			return fmt.Sprintf("description=%s", formatPayloadValue("description", description))
+		}
 	case pebbles.EventTypeDepAdd, pebbles.EventTypeDepRemove:
 		if dependsOn := event.Payload["depends_on"]; dependsOn != "" {
 			return fmt.Sprintf("depends_on=%s", dependsOn)
@@ -331,6 +375,10 @@ func logEventDetailLines(event pebbles.Event) []string {
 	case pebbles.EventTypeStatus:
 		if status := event.Payload["status"]; status != "" {
 			return []string{fmt.Sprintf("status=%s", status)}
+		}
+	case pebbles.EventTypeClose:
+		if description := event.Payload["description"]; description != "" {
+			return []string{fmt.Sprintf("description=%s", formatPayloadValue("description", description))}
 		}
 	case pebbles.EventTypeDepAdd, pebbles.EventTypeDepRemove:
 		if dependsOn := event.Payload["depends_on"]; dependsOn != "" {
