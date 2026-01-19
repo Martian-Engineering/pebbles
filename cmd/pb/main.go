@@ -225,7 +225,7 @@ func runDep(root string, args []string) {
 	case "add":
 		addFlags := flag.NewFlagSet("dep add", flag.ExitOnError)
 		depType := addFlags.String("type", pebbles.DepTypeBlocks, "Dependency type (blocks or parent-child)")
-		_ = addFlags.Parse(args[1:])
+		_ = addFlags.Parse(reorderFlags(args[1:], map[string]bool{"--type": true}))
 		if addFlags.NArg() != 2 {
 			exitError(fmt.Errorf("usage: pb dep add [--type <type>] <issue> <depends-on>"))
 		}
@@ -233,7 +233,7 @@ func runDep(root string, args []string) {
 	case "rm":
 		rmFlags := flag.NewFlagSet("dep rm", flag.ExitOnError)
 		depType := rmFlags.String("type", pebbles.DepTypeBlocks, "Dependency type (blocks or parent-child)")
-		_ = rmFlags.Parse(args[1:])
+		_ = rmFlags.Parse(reorderFlags(args[1:], map[string]bool{"--type": true}))
 		if rmFlags.NArg() != 2 {
 			exitError(fmt.Errorf("usage: pb dep rm [--type <type>] <issue> <depends-on>"))
 		}
@@ -392,7 +392,7 @@ func runRenamePrefix(root string, args []string) {
 	fs := flag.NewFlagSet("rename-prefix", flag.ExitOnError)
 	full := fs.Bool("full", false, "Rename all issues")
 	open := fs.Bool("open", false, "Rename only open issues")
-	_ = fs.Parse(args)
+	_ = fs.Parse(reorderFlags(args, map[string]bool{}))
 	if err := ensureProject(root); err != nil {
 		exitError(err)
 	}
@@ -570,6 +570,32 @@ func splitIssueID(issueID string) (string, string, bool) {
 		return "", "", false
 	}
 	return parts[0], parts[1], true
+}
+
+// reorderFlags moves flags (and their values) before positional args.
+func reorderFlags(args []string, flagsWithValues map[string]bool) []string {
+	var flags []string
+	var positionals []string
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--" {
+			positionals = append(positionals, args[i:]...)
+			break
+		}
+		if strings.HasPrefix(arg, "-") {
+			flags = append(flags, arg)
+			if strings.Contains(arg, "=") {
+				continue
+			}
+			if flagsWithValues[arg] && i+1 < len(args) {
+				flags = append(flags, args[i+1])
+				i++
+			}
+			continue
+		}
+		positionals = append(positionals, arg)
+	}
+	return append(flags, positionals...)
 }
 
 // printDepTree renders dependency nodes with indentation.
