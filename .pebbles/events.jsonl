@@ -136,3 +136,11 @@
 {"type":"close","timestamp":"2026-01-19T20:28:28.905488Z","issue_id":"pb-6666e840","payload":{}}
 {"type":"close","timestamp":"2026-01-19T20:28:33.479932Z","issue_id":"pb-220d3ca7","payload":{}}
 {"type":"close","timestamp":"2026-01-19T20:28:39.953272Z","issue_id":"pb-8d7","payload":{}}
+{"type":"create","timestamp":"2026-01-19T20:41:21.729732Z","issue_id":"pb-cb4","payload":{"description":"Ensure pb list output aligns columns regardless of ID width/prefix; pad status/icon/id/type/priority so columns line up.","priority":"2","title":"Align pb list columns","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T20:41:27.867858Z","issue_id":"pb-017","payload":{"description":"Sample epic for parent-child list indentation test.","priority":"1","title":"Parent epic","type":"epic"}}
+{"type":"create","timestamp":"2026-01-19T20:41:35.872534Z","issue_id":"pb-535","payload":{"description":"Child of sample epic.","priority":"2","title":"Child task A","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T20:41:40.941098Z","issue_id":"pb-9d8","payload":{"description":"Child of sample epic.","priority":"2","title":"Child task B","type":"task"}}
+{"type":"dep_add","timestamp":"2026-01-19T20:41:57.577921Z","issue_id":"pb-535","payload":{"dep_type":"parent-child","depends_on":"pb-017"}}
+{"type":"dep_add","timestamp":"2026-01-19T20:42:05.681108Z","issue_id":"pb-9d8","payload":{"dep_type":"parent-child","depends_on":"pb-017"}}
+{"type":"create","timestamp":"2026-01-19T20:47:26.987971Z","issue_id":"pb-18d","payload":{"description":"Add ANSI color styling to pb list/show similar to Beads; include status/priority/type colors and markdown highlighting in descriptions.","priority":"2","title":"Add colorized output for list/show","type":"feature"}}
+{"type":"create","timestamp":"2026-01-19T20:47:35.27383Z","issue_id":"pb-0be","payload":{"description":"When creating parent-child relationships, assign child IDs that share the parent prefix with a .\u003cN\u003e suffix (like beads) to show lineage.","priority":"2","title":"Use .N suffix for child issue IDs","type":"feature"}}
