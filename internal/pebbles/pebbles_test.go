@@ -14,7 +14,7 @@ func TestCreateUpdateClose(t *testing.T) {
 	}
 	// Create a new issue and rebuild the cache.
 	issueID := "pb-aaaa"
-	if err := AppendEvent(root, NewCreateEvent(issueID, "First", "task", "2024-01-01T00:00:00Z")); err != nil {
+	if err := AppendEvent(root, NewCreateEvent(issueID, "First", "Desc", "task", "2024-01-01T00:00:00Z", 2)); err != nil {
 		t.Fatalf("append create: %v", err)
 	}
 	if err := RebuildCache(root); err != nil {
@@ -29,6 +29,12 @@ func TestCreateUpdateClose(t *testing.T) {
 	}
 	if issues[0].Status != StatusOpen {
 		t.Fatalf("expected status open, got %s", issues[0].Status)
+	}
+	if issues[0].Description != "Desc" {
+		t.Fatalf("expected description to be persisted")
+	}
+	if issues[0].Priority != 2 {
+		t.Fatalf("expected priority 2, got %d", issues[0].Priority)
 	}
 	// Update status and verify.
 	if err := AppendEvent(root, NewStatusEvent(issueID, "in_progress", "2024-01-01T01:00:00Z")); err != nil {
@@ -72,10 +78,10 @@ func TestReadyList(t *testing.T) {
 	// Create two issues with a dependency.
 	issueA := "pb-issue-a"
 	issueB := "pb-issue-b"
-	if err := AppendEvent(root, NewCreateEvent(issueA, "Issue A", "task", "2024-01-02T00:00:00Z")); err != nil {
+	if err := AppendEvent(root, NewCreateEvent(issueA, "Issue A", "", "task", "2024-01-02T00:00:00Z", 2)); err != nil {
 		t.Fatalf("append create A: %v", err)
 	}
-	if err := AppendEvent(root, NewCreateEvent(issueB, "Issue B", "task", "2024-01-02T00:00:01Z")); err != nil {
+	if err := AppendEvent(root, NewCreateEvent(issueB, "Issue B", "", "task", "2024-01-02T00:00:01Z", 2)); err != nil {
 		t.Fatalf("append create B: %v", err)
 	}
 	if err := AppendEvent(root, NewDepAddEvent(issueA, issueB, "2024-01-02T00:00:02Z")); err != nil {
@@ -104,6 +110,48 @@ func TestReadyList(t *testing.T) {
 	}
 	if len(ready) != 1 || ready[0].ID != issueA {
 		t.Fatalf("expected only %s ready", issueA)
+	}
+}
+
+// TestDependencyTree verifies dependency tree construction.
+func TestDependencyTree(t *testing.T) {
+	root := t.TempDir()
+	if err := InitProject(root); err != nil {
+		t.Fatalf("init project: %v", err)
+	}
+	issueA := "pb-tree-a"
+	issueB := "pb-tree-b"
+	issueC := "pb-tree-c"
+	if err := AppendEvent(root, NewCreateEvent(issueA, "Issue A", "", "task", "2024-01-03T00:00:00Z", 2)); err != nil {
+		t.Fatalf("append create A: %v", err)
+	}
+	if err := AppendEvent(root, NewCreateEvent(issueB, "Issue B", "", "task", "2024-01-03T00:00:01Z", 2)); err != nil {
+		t.Fatalf("append create B: %v", err)
+	}
+	if err := AppendEvent(root, NewCreateEvent(issueC, "Issue C", "", "task", "2024-01-03T00:00:02Z", 2)); err != nil {
+		t.Fatalf("append create C: %v", err)
+	}
+	if err := AppendEvent(root, NewDepAddEvent(issueA, issueB, "2024-01-03T00:00:03Z")); err != nil {
+		t.Fatalf("append dep A->B: %v", err)
+	}
+	if err := AppendEvent(root, NewDepAddEvent(issueB, issueC, "2024-01-03T00:00:04Z")); err != nil {
+		t.Fatalf("append dep B->C: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache: %v", err)
+	}
+	tree, err := DependencyTree(root, issueA)
+	if err != nil {
+		t.Fatalf("dependency tree: %v", err)
+	}
+	if tree.Issue.ID != issueA {
+		t.Fatalf("expected root %s, got %s", issueA, tree.Issue.ID)
+	}
+	if len(tree.Dependencies) != 1 || tree.Dependencies[0].Issue.ID != issueB {
+		t.Fatalf("expected child %s", issueB)
+	}
+	if len(tree.Dependencies[0].Dependencies) != 1 || tree.Dependencies[0].Dependencies[0].Issue.ID != issueC {
+		t.Fatalf("expected grandchild %s", issueC)
 	}
 }
 

@@ -1,10 +1,14 @@
 package pebbles
 
+import "fmt"
+
 // NewCreateEvent builds a create event for an issue.
-func NewCreateEvent(issueID, title, issueType, timestamp string) Event {
+func NewCreateEvent(issueID, title, description, issueType, timestamp string, priority int) Event {
 	payload := map[string]string{
-		"title": title,
-		"type":  issueType,
+		"title":       title,
+		"description": description,
+		"type":        issueType,
+		"priority":    fmt.Sprintf("%d", priority),
 	}
 	return Event{Type: EventTypeCreate, Timestamp: timestamp, IssueID: issueID, Payload: payload}
 }
@@ -24,4 +28,10 @@ func NewCloseEvent(issueID, timestamp string) Event {
 func NewDepAddEvent(issueID, dependsOn, timestamp string) Event {
 	payload := map[string]string{"depends_on": dependsOn}
 	return Event{Type: EventTypeDepAdd, Timestamp: timestamp, IssueID: issueID, Payload: payload}
+}
+
+// NewDepRemoveEvent builds a dependency removal event.
+func NewDepRemoveEvent(issueID, dependsOn, timestamp string) Event {
+	payload := map[string]string{"depends_on": dependsOn}
+	return Event{Type: EventTypeDepRemove, Timestamp: timestamp, IssueID: issueID, Payload: payload}
 }

@@ -10,13 +10,15 @@ type Event struct {
 
 // Issue represents the current state of a Pebbles issue.
 type Issue struct {
-	ID        string
-	Title     string
-	IssueType string
-	Status    string
-	CreatedAt string
-	UpdatedAt string
-	ClosedAt  string
+	ID          string
+	Title       string
+	Description string
+	IssueType   string
+	Status      string
+	Priority    int
+	CreatedAt   string
+	UpdatedAt   string
+	ClosedAt    string
 }
 
 // Config stores per-project Pebbles settings.
@@ -33,11 +35,15 @@ const (
 	EventTypeClose = "close"
 	// EventTypeDepAdd indicates a dependency add event.
 	EventTypeDepAdd = "dep_add"
+	// EventTypeDepRemove indicates a dependency removal event.
+	EventTypeDepRemove = "dep_rm"
 )
 
 const (
 	// StatusOpen indicates an open issue.
 	StatusOpen = "open"
+	// StatusInProgress indicates an in-progress issue.
+	StatusInProgress = "in_progress"
 	// StatusClosed indicates a closed issue.
 	StatusClosed = "closed"
 )

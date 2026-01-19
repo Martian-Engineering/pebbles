@@ -17,7 +17,7 @@ func ListIssues(root string) ([]Issue, error) {
 	defer func() { _ = db.Close() }()
 	// Query all issues in a stable order for output.
 	rows, err := db.Query(
-		"SELECT id, title, issue_type, status, created_at, updated_at, closed_at FROM issues ORDER BY id",
+		"SELECT id, title, description, issue_type, status, priority, created_at, updated_at, closed_at FROM issues ORDER BY id",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("list issues: %w", err)
@@ -50,7 +50,7 @@ func GetIssue(root, id string) (Issue, []string, error) {
 	defer func() { _ = db.Close() }()
 	// Fetch the issue row by ID.
 	row := db.QueryRow(
-		"SELECT id, title, issue_type, status, created_at, updated_at, closed_at FROM issues WHERE id = ?",
+		"SELECT id, title, description, issue_type, status, priority, created_at, updated_at, closed_at FROM issues WHERE id = ?",
 		id,
 	)
 	issue, err := scanIssue(row)
@@ -77,7 +77,7 @@ func ListReadyIssues(root string) ([]Issue, error) {
 	defer func() { _ = db.Close() }()
 	// Select issues that are not closed and have no deps on open issues.
 	query := `
-		SELECT i.id, i.title, i.issue_type, i.status, i.created_at, i.updated_at, i.closed_at
+		SELECT i.id, i.title, i.description, i.issue_type, i.status, i.priority, i.created_at, i.updated_at, i.closed_at
 		FROM issues i
 		WHERE i.status != ?
 		AND NOT EXISTS (
@@ -114,13 +114,29 @@ func scanIssue(scanner interface{ Scan(...any) error }) (Issue, error) {
 	if err := scanner.Scan(
 		&issue.ID,
 		&issue.Title,
+		&issue.Description,
 		&issue.IssueType,
 		&issue.Status,
+		&issue.Priority,
 		&issue.CreatedAt,
 		&issue.UpdatedAt,
 		&issue.ClosedAt,
 	); err != nil {
 		return Issue{}, fmt.Errorf("scan issue: %w", err)
+	}
+	return issue, nil
+}
+
+// getIssueByID fetches an issue by ID using the provided DB connection.
+func getIssueByID(db *sql.DB, id string) (Issue, error) {
+	// Query by ID for dependency tree and status helpers.
+	row := db.QueryRow(
+		"SELECT id, title, description, issue_type, status, priority, created_at, updated_at, closed_at FROM issues WHERE id = ?",
+		id,
+	)
+	issue, err := scanIssue(row)
+	if err != nil {
+		return Issue{}, fmt.Errorf("get issue: %w", err)
 	}
 	return issue, nil
 }

@@ -21,7 +21,7 @@ go build -o pb ./cmd/pb
 pb init
 
 # Create an issue
-pb create --title="Add login" --type=task
+pb create --title="Add login" --type=task --priority=P2 --description="Track login work"
 
 # List issues
 pb list
@@ -37,6 +37,12 @@ pb close pb-abc12345
 
 # Add a dependency
 pb dep add pb-issue-a pb-issue-b
+
+# Remove a dependency
+pb dep rm pb-issue-a pb-issue-b
+
+# Show dependency tree
+pb dep tree pb-issue-a
 
 # List ready issues (no open blockers)
 pb ready

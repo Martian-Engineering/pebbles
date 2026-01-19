@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"pebbles/internal/pebbles"
 )
@@ -40,6 +41,8 @@ func main() {
 		runDep(root, args)
 	case "ready":
 		runReady(root, args)
+	case "help":
+		printUsage()
 	default:
 		printUsage()
 		os.Exit(1)
@@ -60,7 +63,9 @@ func runInit(root string, args []string) {
 func runCreate(root string, args []string) {
 	fs := flag.NewFlagSet("create", flag.ExitOnError)
 	title := fs.String("title", "", "Issue title")
+	description := fs.String("description", "", "Issue description")
 	issueType := fs.String("type", "task", "Issue type")
+	priority := fs.String("priority", "P2", "Issue priority (P0-P4)")
 	_ = fs.Parse(args)
 	// Ensure the project is initialized and inputs are present.
 	if err := ensureProject(root); err != nil {
@@ -74,9 +79,13 @@ func runCreate(root string, args []string) {
 	if err != nil {
 		exitError(err)
 	}
+	parsedPriority, err := pebbles.ParsePriority(*priority)
+	if err != nil {
+		exitError(err)
+	}
 	timestamp := pebbles.NowTimestamp()
 	issueID := pebbles.GenerateIssueID(cfg.Prefix, *title, timestamp, pebbles.HostLabel())
-	event := pebbles.NewCreateEvent(issueID, *title, *issueType, timestamp)
+	event := pebbles.NewCreateEvent(issueID, *title, *description, *issueType, timestamp, parsedPriority)
 	// Append to the event log, then rebuild the cache for reads.
 	if err := pebbles.AppendEvent(root, event); err != nil {
 		exitError(err)
@@ -99,7 +108,7 @@ func runList(root string, args []string) {
 		exitError(err)
 	}
 	for _, issue := range issues {
-		fmt.Printf("%s\t%s\t%s\n", issue.ID, issue.Status, issue.Title)
+		fmt.Println(formatIssueLine(issue))
 	}
 }
 
@@ -119,7 +128,7 @@ func runShow(root string, args []string) {
 	if err != nil {
 		exitError(err)
 	}
-	printIssue(issue, deps)
+	printIssue(root, issue, deps)
 }
 
 // runUpdate handles pb update.
@@ -182,7 +191,7 @@ func runClose(root string, args []string) {
 	}
 }
 
-// runDep handles pb dep add.
+// runDep handles pb dep commands.
 func runDep(root string, args []string) {
 	fs := flag.NewFlagSet("dep", flag.ExitOnError)
 	_ = fs.Parse(args)
@@ -190,11 +199,34 @@ func runDep(root string, args []string) {
 	if err := ensureProject(root); err != nil {
 		exitError(err)
 	}
-	if fs.NArg() != 3 || fs.Arg(0) != "add" {
-		exitError(fmt.Errorf("usage: pb dep add <issue> <depends-on>"))
+	if fs.NArg() < 1 {
+		exitError(fmt.Errorf("usage: pb dep <add|rm|tree> [args]"))
 	}
-	issueID := fs.Arg(1)
-	dependsOn := fs.Arg(2)
+	// Route subcommands for dependency operations.
+	action := fs.Arg(0)
+	switch action {
+	case "add":
+		if fs.NArg() != 3 {
+			exitError(fmt.Errorf("usage: pb dep add <issue> <depends-on>"))
+		}
+		runDepAdd(root, fs.Arg(1), fs.Arg(2))
+	case "rm":
+		if fs.NArg() != 3 {
+			exitError(fmt.Errorf("usage: pb dep rm <issue> <depends-on>"))
+		}
+		runDepRemove(root, fs.Arg(1), fs.Arg(2))
+	case "tree":
+		if fs.NArg() != 2 {
+			exitError(fmt.Errorf("usage: pb dep tree <issue>"))
+		}
+		runDepTree(root, fs.Arg(1))
+	default:
+		exitError(fmt.Errorf("usage: pb dep <add|rm|tree> [args]"))
+	}
+}
+
+// runDepAdd appends a dependency add event.
+func runDepAdd(root, issueID, dependsOn string) {
 	// Ensure both sides exist before appending the event.
 	if _, _, err := pebbles.GetIssue(root, issueID); err != nil {
 		exitError(err)
@@ -212,6 +244,34 @@ func runDep(root string, args []string) {
 	}
 }
 
+// runDepRemove appends a dependency removal event.
+func runDepRemove(root, issueID, dependsOn string) {
+	// Ensure both sides exist before appending the event.
+	if _, _, err := pebbles.GetIssue(root, issueID); err != nil {
+		exitError(err)
+	}
+	if _, _, err := pebbles.GetIssue(root, dependsOn); err != nil {
+		exitError(err)
+	}
+	event := pebbles.NewDepRemoveEvent(issueID, dependsOn, pebbles.NowTimestamp())
+	// Append the event and rebuild the cache.
+	if err := pebbles.AppendEvent(root, event); err != nil {
+		exitError(err)
+	}
+	if err := pebbles.RebuildCache(root); err != nil {
+		exitError(err)
+	}
+}
+
+// runDepTree prints a dependency tree for an issue.
+func runDepTree(root, issueID string) {
+	node, err := pebbles.DependencyTree(root, issueID)
+	if err != nil {
+		exitError(err)
+	}
+	printDepTree(node, 0)
+}
+
 // runReady handles pb ready.
 func runReady(root string, args []string) {
 	fs := flag.NewFlagSet("ready", flag.ExitOnError)
@@ -224,7 +284,7 @@ func runReady(root string, args []string) {
 		exitError(err)
 	}
 	for _, issue := range issues {
-		fmt.Printf("%s\t%s\t%s\n", issue.ID, issue.Status, issue.Title)
+		fmt.Println(formatIssueLine(issue))
 	}
 }
 
@@ -237,36 +297,111 @@ func ensureProject(root string) error {
 }
 
 // printIssue renders a single issue to stdout.
-func printIssue(issue pebbles.Issue, deps []string) {
-	// Print core issue fields first.
-	fmt.Printf("ID: %s\n", issue.ID)
-	fmt.Printf("Title: %s\n", issue.Title)
+func printIssue(root string, issue pebbles.Issue, deps []string) {
+	// Header includes the status icon and priority badge.
+	header := fmt.Sprintf(
+		"%s %s · %s   [● %s · %s]",
+		pebbles.StatusIcon(issue.Status),
+		issue.ID,
+		issue.Title,
+		pebbles.PriorityLabel(issue.Priority),
+		pebbles.StatusLabel(issue.Status),
+	)
+	fmt.Println(header)
+	// Core metadata block.
 	fmt.Printf("Type: %s\n", issue.IssueType)
-	fmt.Printf("Status: %s\n", issue.Status)
-	fmt.Printf("Created: %s\n", issue.CreatedAt)
-	fmt.Printf("Updated: %s\n", issue.UpdatedAt)
-	if issue.ClosedAt != "" {
-		fmt.Printf("Closed: %s\n", issue.ClosedAt)
+	fmt.Printf(
+		"Created: %s · Updated: %s\n\n",
+		formatDate(issue.CreatedAt),
+		formatDate(issue.UpdatedAt),
+	)
+	// Description section.
+	fmt.Println("DESCRIPTION")
+	if strings.TrimSpace(issue.Description) == "" {
+		fmt.Println("(none)")
+	} else {
+		fmt.Println(issue.Description)
 	}
-	// Print dependencies after the main issue fields.
+	// Dependency list with status per dependency.
+	fmt.Println("\nDEPENDENCIES")
 	if len(deps) == 0 {
-		fmt.Println("Dependencies: none")
+		fmt.Println("  (none)")
 		return
 	}
-	fmt.Println("Dependencies:")
 	for _, dep := range deps {
-		fmt.Printf("- %s\n", dep)
+		status, err := pebbles.IssueStatus(root, dep)
+		if err != nil {
+			fmt.Printf("  → %s (unknown)\n", dep)
+			continue
+		}
+		fmt.Printf("  → %s (%s)\n", dep, status)
 	}
 }
 
 // printUsage prints a brief usage message.
 func printUsage() {
-	fmt.Println("pb <command> [args]")
-	fmt.Println("Commands: init, create, list, show, update, close, dep, ready")
+	fmt.Println("Pebbles - A minimal issue tracker with append-only event log.")
+	fmt.Println("")
+	fmt.Println("Usage:")
+	fmt.Println("  pb [command]")
+	fmt.Println("")
+	fmt.Println("Working With Issues:")
+	fmt.Println("  create      Create a new issue")
+	fmt.Println("  list        List issues")
+	fmt.Println("  show        Show issue details")
+	fmt.Println("  update      Update an issue")
+	fmt.Println("  close       Close an issue")
+	fmt.Println("  ready       Show issues ready to work (no blockers)")
+	fmt.Println("")
+	fmt.Println("Dependencies:")
+	fmt.Println("  dep add     Add a dependency")
+	fmt.Println("  dep rm      Remove a dependency")
+	fmt.Println("  dep tree    Show dependency tree")
+	fmt.Println("")
+	fmt.Println("Setup:")
+	fmt.Println("  init        Initialize a pebbles project")
+	fmt.Println("  help        Show this help")
 }
 
 // exitError prints an error to stderr and exits.
 func exitError(err error) {
 	fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 	os.Exit(1)
+}
+
+// formatIssueLine returns a formatted list output for an issue.
+func formatIssueLine(issue pebbles.Issue) string {
+	return fmt.Sprintf(
+		"%s %s [● %s] [%s] - %s",
+		pebbles.StatusIcon(issue.Status),
+		issue.ID,
+		pebbles.PriorityLabel(issue.Priority),
+		issue.IssueType,
+		issue.Title,
+	)
+}
+
+// formatDate renders a timestamp as YYYY-MM-DD when possible.
+func formatDate(timestamp string) string {
+	parsed, err := time.Parse(time.RFC3339Nano, timestamp)
+	if err != nil {
+		return timestamp
+	}
+	return parsed.Format("2006-01-02")
+}
+
+// printDepTree renders dependency nodes with indentation.
+func printDepTree(node pebbles.DepNode, depth int) {
+	indent := strings.Repeat("  ", depth)
+	line := fmt.Sprintf(
+		"%s%s %s (%s)",
+		indent,
+		pebbles.StatusIcon(node.Issue.Status),
+		node.Issue.ID,
+		node.Issue.Status,
+	)
+	fmt.Println(line)
+	for _, child := range node.Dependencies {
+		printDepTree(child, depth+1)
+	}
 }

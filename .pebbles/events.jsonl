@@ -7,3 +7,18 @@
 {"type":"status_update","timestamp":"2026-01-19T16:01:24.28813Z","issue_id":"pebbles-bf887cf2","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-19T16:01:33.587699Z","issue_id":"pebbles-bf887cf2","payload":{}}
 {"type":"close","timestamp":"2026-01-19T16:01:43.090285Z","issue_id":"pebbles-4db13888","payload":{}}
+{"type":"dep_add","timestamp":"2026-01-19T16:32:51.147533Z","issue_id":"pebbles-c794f359","payload":{"depends_on":"pebbles-2d76e51c"}}
+{"type":"create","timestamp":"2026-01-19T16:38:51.073985Z","issue_id":"pebbles-511e9f30","payload":{"title":"Add pb help command","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T16:38:57.528407Z","issue_id":"pebbles-aa03707b","payload":{"title":"Update pb show formatting for parity","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T16:39:03.323931Z","issue_id":"pebbles-b7fdf344","payload":{"title":"Add dep rm and dep tree commands","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T16:39:09.915721Z","issue_id":"pebbles-4db6348d","payload":{"title":"Add description/priority to create and storage","type":"task"}}
+{"type":"status_update","timestamp":"2026-01-19T16:39:21.023669Z","issue_id":"pebbles-4db6348d","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T16:48:05.794568Z","issue_id":"pebbles-511e9f30","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T16:48:12.329715Z","issue_id":"pebbles-aa03707b","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T16:48:20.219935Z","issue_id":"pebbles-b7fdf344","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T16:48:26.933256Z","issue_id":"pebbles-c794f359","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T16:49:26.301547Z","issue_id":"pebbles-4db6348d","payload":{}}
+{"type":"close","timestamp":"2026-01-19T16:49:33.742648Z","issue_id":"pebbles-511e9f30","payload":{}}
+{"type":"close","timestamp":"2026-01-19T16:49:42.445937Z","issue_id":"pebbles-aa03707b","payload":{}}
+{"type":"close","timestamp":"2026-01-19T16:49:48.775124Z","issue_id":"pebbles-b7fdf344","payload":{}}
+{"type":"close","timestamp":"2026-01-19T16:49:55.126947Z","issue_id":"pebbles-c794f359","payload":{}}

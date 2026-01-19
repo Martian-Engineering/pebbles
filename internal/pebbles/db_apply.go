@@ -25,8 +25,10 @@ func ensureSchema(db *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS issues (
 			id TEXT PRIMARY KEY,
 			title TEXT NOT NULL,
+			description TEXT NOT NULL,
 			issue_type TEXT NOT NULL,
 			status TEXT NOT NULL,
+			priority INTEGER NOT NULL,
 			created_at TEXT NOT NULL,
 			updated_at TEXT NOT NULL,
 			closed_at TEXT
@@ -67,6 +69,8 @@ func applyEvent(db *sql.DB, event Event) error {
 		return applyClose(db, event)
 	case EventTypeDepAdd:
 		return applyDepAdd(db, event)
+	case EventTypeDepRemove:
+		return applyDepRemove(db, event)
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Type)
 	}
@@ -78,19 +82,23 @@ func applyCreate(db *sql.DB, event Event) error {
 	if !ok || title == "" {
 		return fmt.Errorf("create event missing title")
 	}
+	description := event.Payload["description"]
 	// Default issue type to task when omitted.
 	issueType := event.Payload["type"]
 	if issueType == "" {
 		issueType = "task"
 	}
+	priority := parsePriority(event.Payload["priority"])
 	// Insert the new issue using the event timestamp.
 	_, err := db.Exec(
-		`INSERT INTO issues (id, title, issue_type, status, created_at, updated_at, closed_at)
-		 VALUES (?, ?, ?, ?, ?, ?, "")`,
+		`INSERT INTO issues (id, title, description, issue_type, status, priority, created_at, updated_at, closed_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, "")`,
 		event.IssueID,
 		title,
+		description,
 		issueType,
 		StatusOpen,
+		priority,
 		event.Timestamp,
 		event.Timestamp,
 	)
@@ -156,6 +164,31 @@ func applyDepAdd(db *sql.DB, event Event) error {
 	)
 	if err != nil {
 		return fmt.Errorf("insert dependency: %w", err)
+	}
+	return nil
+}
+
+// applyDepRemove removes a dependency from a dep_rm event.
+func applyDepRemove(db *sql.DB, event Event) error {
+	dependsOn := event.Payload["depends_on"]
+	if dependsOn == "" {
+		return fmt.Errorf("dep_rm event missing depends_on")
+	}
+	// Validate both issues exist before attempting removal.
+	if err := ensureIssueExists(db, event.IssueID); err != nil {
+		return err
+	}
+	if err := ensureIssueExists(db, dependsOn); err != nil {
+		return err
+	}
+	// Delete the dependency edge if present.
+	_, err := db.Exec(
+		"DELETE FROM deps WHERE issue_id = ? AND depends_on_id = ?",
+		event.IssueID,
+		dependsOn,
+	)
+	if err != nil {
+		return fmt.Errorf("delete dependency: %w", err)
 	}
 	return nil
 }
