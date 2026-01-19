@@ -23,7 +23,11 @@ func DependencyTree(root, id string) (DepNode, error) {
 	defer func() { _ = db.Close() }()
 	// Track visited nodes to avoid infinite loops on cycles.
 	visited := make(map[string]bool)
-	return buildDepTree(db, id, visited)
+	resolvedID, err := resolveIssueID(db, id)
+	if err != nil {
+		return DepNode{}, err
+	}
+	return buildDepTree(db, resolvedID, visited)
 }
 
 // IssueStatus returns the status for the given issue ID.
@@ -36,8 +40,12 @@ func IssueStatus(root, id string) (string, error) {
 		return "", err
 	}
 	defer func() { _ = db.Close() }()
+	resolvedID, err := resolveIssueID(db, id)
+	if err != nil {
+		return "", err
+	}
 	var status string
-	row := db.QueryRow("SELECT status FROM issues WHERE id = ?", id)
+	row := db.QueryRow("SELECT status FROM issues WHERE id = ?", resolvedID)
 	if err := row.Scan(&status); err != nil {
 		return "", fmt.Errorf("get issue status: %w", err)
 	}

@@ -41,6 +41,12 @@ func main() {
 		runDep(root, args)
 	case "ready":
 		runReady(root, args)
+	case "prefix":
+		runPrefix(root, args)
+	case "rename":
+		runRename(root, args)
+	case "rename-prefix":
+		runRenamePrefix(root, args)
 	case "help":
 		printUsage()
 	default:
@@ -288,6 +294,148 @@ func runReady(root string, args []string) {
 	}
 }
 
+// runPrefix handles pb prefix commands.
+func runPrefix(root string, args []string) {
+	fs := flag.NewFlagSet("prefix", flag.ExitOnError)
+	_ = fs.Parse(args)
+	if err := ensureProject(root); err != nil {
+		exitError(err)
+	}
+	if fs.NArg() < 1 {
+		exitError(fmt.Errorf("usage: pb prefix set <prefix>"))
+	}
+	action := fs.Arg(0)
+	switch action {
+	case "set":
+		if fs.NArg() != 2 {
+			exitError(fmt.Errorf("usage: pb prefix set <prefix>"))
+		}
+		runPrefixSet(root, fs.Arg(1))
+	default:
+		exitError(fmt.Errorf("usage: pb prefix set <prefix>"))
+	}
+}
+
+// runPrefixSet updates the prefix stored in the Pebbles config.
+func runPrefixSet(root, prefix string) {
+	trimmed := strings.TrimSpace(prefix)
+	if trimmed == "" {
+		exitError(fmt.Errorf("prefix is required"))
+	}
+	cfg, err := pebbles.LoadConfig(root)
+	if err != nil {
+		exitError(err)
+	}
+	cfg.Prefix = trimmed
+	if err := pebbles.WriteConfig(root, cfg); err != nil {
+		exitError(err)
+	}
+	fmt.Printf("Prefix set to %s\n", trimmed)
+}
+
+// runRename handles pb rename.
+func runRename(root string, args []string) {
+	fs := flag.NewFlagSet("rename", flag.ExitOnError)
+	_ = fs.Parse(args)
+	if err := ensureProject(root); err != nil {
+		exitError(err)
+	}
+	if fs.NArg() != 2 {
+		exitError(fmt.Errorf("usage: pb rename <old> <new>"))
+	}
+	oldID := strings.TrimSpace(fs.Arg(0))
+	newID := strings.TrimSpace(fs.Arg(1))
+	if oldID == "" || newID == "" {
+		exitError(fmt.Errorf("rename requires non-empty ids"))
+	}
+	// Validate the old and new identifiers before appending the event.
+	if _, _, err := pebbles.GetIssue(root, oldID); err != nil {
+		exitError(err)
+	}
+	exists, err := pebbles.IssueExists(root, newID)
+	if err != nil {
+		exitError(err)
+	}
+	if exists {
+		exitError(fmt.Errorf("issue id already exists: %s", newID))
+	}
+	// Append the rename event and rebuild the cache.
+	event := pebbles.NewRenameEvent(oldID, newID, pebbles.NowTimestamp())
+	if err := pebbles.AppendEvent(root, event); err != nil {
+		exitError(err)
+	}
+	if err := pebbles.RebuildCache(root); err != nil {
+		exitError(err)
+	}
+	fmt.Printf("Renamed %s -> %s\n", oldID, newID)
+}
+
+// runRenamePrefix updates IDs to a new prefix.
+func runRenamePrefix(root string, args []string) {
+	fs := flag.NewFlagSet("rename-prefix", flag.ExitOnError)
+	full := fs.Bool("full", false, "Rename all issues")
+	open := fs.Bool("open", false, "Rename only open issues")
+	_ = fs.Parse(args)
+	if err := ensureProject(root); err != nil {
+		exitError(err)
+	}
+	if fs.NArg() != 1 {
+		exitError(fmt.Errorf("usage: pb rename-prefix <prefix> [--full|--open]"))
+	}
+	if *full && *open {
+		exitError(fmt.Errorf("choose either --full or --open"))
+	}
+	if !*full && !*open {
+		*open = true
+	}
+	newPrefix := strings.TrimSpace(fs.Arg(0))
+	if newPrefix == "" {
+		exitError(fmt.Errorf("prefix is required"))
+	}
+	issues, err := pebbles.ListIssues(root)
+	if err != nil {
+		exitError(err)
+	}
+	// Build the rename plan before writing any events.
+	events := make([]pebbles.Event, 0)
+	seen := make(map[string]bool)
+	for _, issue := range issues {
+		if *open && issue.Status == pebbles.StatusClosed {
+			continue
+		}
+		prefix, suffix, ok := splitIssueID(issue.ID)
+		if !ok {
+			exitError(fmt.Errorf("invalid issue id: %s", issue.ID))
+		}
+		if prefix == newPrefix {
+			continue
+		}
+		targetID := fmt.Sprintf("%s-%s", newPrefix, suffix)
+		if seen[targetID] {
+			exitError(fmt.Errorf("duplicate target id: %s", targetID))
+		}
+		seen[targetID] = true
+		exists, err := pebbles.IssueExists(root, targetID)
+		if err != nil {
+			exitError(err)
+		}
+		if exists {
+			exitError(fmt.Errorf("issue id already exists: %s", targetID))
+		}
+		events = append(events, pebbles.NewRenameEvent(issue.ID, targetID, pebbles.NowTimestamp()))
+	}
+	// Append all rename events in order, then rebuild the cache once.
+	for _, event := range events {
+		if err := pebbles.AppendEvent(root, event); err != nil {
+			exitError(err)
+		}
+	}
+	if err := pebbles.RebuildCache(root); err != nil {
+		exitError(err)
+	}
+	fmt.Printf("Renamed %d issues to %s\n", len(events), newPrefix)
+}
+
 // ensureProject checks that the .pebbles directory exists.
 func ensureProject(root string) error {
 	if _, err := os.Stat(pebbles.EventsPath(root)); err != nil {
@@ -351,12 +499,17 @@ func printUsage() {
 	fmt.Println("  show        Show issue details")
 	fmt.Println("  update      Update an issue")
 	fmt.Println("  close       Close an issue")
+	fmt.Println("  rename      Rename an issue id")
+	fmt.Println("  rename-prefix Rename open issues to a new prefix")
 	fmt.Println("  ready       Show issues ready to work (no blockers)")
 	fmt.Println("")
 	fmt.Println("Dependencies:")
 	fmt.Println("  dep add     Add a dependency")
 	fmt.Println("  dep rm      Remove a dependency")
 	fmt.Println("  dep tree    Show dependency tree")
+	fmt.Println("")
+	fmt.Println("Prefixes:")
+	fmt.Println("  prefix set  Update the prefix used for new ids")
 	fmt.Println("")
 	fmt.Println("Setup:")
 	fmt.Println("  init        Initialize a pebbles project")
@@ -388,6 +541,15 @@ func formatDate(timestamp string) string {
 		return timestamp
 	}
 	return parsed.Format("2006-01-02")
+}
+
+// splitIssueID separates an issue ID into prefix and suffix.
+func splitIssueID(issueID string) (string, string, bool) {
+	parts := strings.SplitN(issueID, "-", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", false
+	}
+	return parts[0], parts[1], true
 }
 
 // printDepTree renders dependency nodes with indentation.

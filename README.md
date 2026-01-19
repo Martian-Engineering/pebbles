@@ -35,6 +35,15 @@ pb update pb-abc12345 --status in_progress
 # Close an issue
 pb close pb-abc12345
 
+# Rename an issue id
+pb rename pb-abc12345 pb-new1234
+
+# Rename open issues to a new prefix
+pb rename-prefix peb --open
+
+# Set the prefix for new issue IDs
+pb prefix set peb
+
 # Add a dependency
 pb dep add pb-issue-a pb-issue-b
 

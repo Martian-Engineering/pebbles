@@ -69,6 +69,71 @@ func TestCreateUpdateClose(t *testing.T) {
 	}
 }
 
+// TestRenameEvent verifies rename events update IDs and resolve aliases.
+func TestRenameEvent(t *testing.T) {
+	root := t.TempDir()
+	if err := InitProject(root); err != nil {
+		t.Fatalf("init project: %v", err)
+	}
+	oldID := "pb-old"
+	newID := "pb-new"
+	if err := AppendEvent(root, NewCreateEvent(oldID, "First", "", "task", "2024-01-04T00:00:00Z", 2)); err != nil {
+		t.Fatalf("append create: %v", err)
+	}
+	if err := AppendEvent(root, NewRenameEvent(oldID, newID, "2024-01-04T01:00:00Z")); err != nil {
+		t.Fatalf("append rename: %v", err)
+	}
+	if err := AppendEvent(root, NewStatusEvent(oldID, StatusInProgress, "2024-01-04T02:00:00Z")); err != nil {
+		t.Fatalf("append status: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache: %v", err)
+	}
+	issue, _, err := GetIssue(root, oldID)
+	if err != nil {
+		t.Fatalf("get issue by old id: %v", err)
+	}
+	if issue.ID != newID {
+		t.Fatalf("expected renamed id %s, got %s", newID, issue.ID)
+	}
+	if issue.Status != StatusInProgress {
+		t.Fatalf("expected status %s, got %s", StatusInProgress, issue.Status)
+	}
+}
+
+// TestRenameUpdatesDeps ensures dependency rows are updated on rename.
+func TestRenameUpdatesDeps(t *testing.T) {
+	root := t.TempDir()
+	if err := InitProject(root); err != nil {
+		t.Fatalf("init project: %v", err)
+	}
+	issueA := "pb-dep-a"
+	issueB := "pb-dep-b"
+	renamedB := "pb-dep-new"
+	if err := AppendEvent(root, NewCreateEvent(issueA, "Issue A", "", "task", "2024-01-05T00:00:00Z", 2)); err != nil {
+		t.Fatalf("append create A: %v", err)
+	}
+	if err := AppendEvent(root, NewCreateEvent(issueB, "Issue B", "", "task", "2024-01-05T00:00:01Z", 2)); err != nil {
+		t.Fatalf("append create B: %v", err)
+	}
+	if err := AppendEvent(root, NewDepAddEvent(issueA, issueB, "2024-01-05T00:00:02Z")); err != nil {
+		t.Fatalf("append dep: %v", err)
+	}
+	if err := AppendEvent(root, NewRenameEvent(issueB, renamedB, "2024-01-05T00:00:03Z")); err != nil {
+		t.Fatalf("append rename: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache: %v", err)
+	}
+	_, deps, err := GetIssue(root, issueA)
+	if err != nil {
+		t.Fatalf("get issue: %v", err)
+	}
+	if len(deps) != 1 || deps[0] != renamedB {
+		t.Fatalf("expected dependency %s", renamedB)
+	}
+}
+
 // TestReadyList verifies dependency-based ready filtering.
 func TestReadyList(t *testing.T) {
 	root := t.TempDir()

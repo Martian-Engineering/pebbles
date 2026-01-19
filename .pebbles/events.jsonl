@@ -52,3 +52,4 @@
 {"type":"create","timestamp":"2026-01-19T17:52:58.305093Z","issue_id":"pebbles-6666e840","payload":{"description":"Add dep add/rm --type flag and optional parent set helper.","priority":"2","title":"Typed deps: CLI flags","type":"task"}}
 {"type":"create","timestamp":"2026-01-19T17:53:08.187043Z","issue_id":"pebbles-220d3ca7","payload":{"description":"Add tests for dep_type behavior (ready, list indentation).","priority":"2","title":"Typed deps: tests","type":"task"}}
 {"type":"close","timestamp":"2026-01-19T17:53:15.195988Z","issue_id":"pebbles-2eaa5d01","payload":{}}
+{"type":"close","timestamp":"2026-01-19T18:07:12.284192Z","issue_id":"pebbles-e6f2b053","payload":{}}

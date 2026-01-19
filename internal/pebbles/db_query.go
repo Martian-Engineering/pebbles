@@ -48,17 +48,21 @@ func GetIssue(root, id string) (Issue, []string, error) {
 		return Issue{}, nil, err
 	}
 	defer func() { _ = db.Close() }()
+	resolvedID, err := resolveIssueID(db, id)
+	if err != nil {
+		return Issue{}, nil, err
+	}
 	// Fetch the issue row by ID.
 	row := db.QueryRow(
 		"SELECT id, title, description, issue_type, status, priority, created_at, updated_at, closed_at FROM issues WHERE id = ?",
-		id,
+		resolvedID,
 	)
 	issue, err := scanIssue(row)
 	if err != nil {
 		return Issue{}, nil, err
 	}
 	// Fetch dependencies for the issue.
-	deps, err := getDeps(db, id)
+	deps, err := getDeps(db, resolvedID)
 	if err != nil {
 		return Issue{}, nil, err
 	}
@@ -105,6 +109,23 @@ func ListReadyIssues(root string) ([]Issue, error) {
 		return nil, fmt.Errorf("ready issues rows: %w", err)
 	}
 	return issues, nil
+}
+
+// IssueExists reports whether an issue exists for the given ID or alias.
+func IssueExists(root, id string) (bool, error) {
+	if err := EnsureCache(root); err != nil {
+		return false, err
+	}
+	db, err := openDB(DBPath(root))
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = db.Close() }()
+	resolvedID, err := resolveIssueID(db, id)
+	if err != nil {
+		return false, err
+	}
+	return issueExists(db, resolvedID)
 }
 
 // scanIssue scans a single issue row from a row scanner.

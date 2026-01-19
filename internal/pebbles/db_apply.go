@@ -10,6 +10,7 @@ func resetSchema(db *sql.DB) error {
 	queries := []string{
 		"DROP TABLE IF EXISTS deps",
 		"DROP TABLE IF EXISTS issues",
+		"DROP TABLE IF EXISTS renames",
 	}
 	for _, query := range queries {
 		if _, err := db.Exec(query); err != nil {
@@ -38,6 +39,10 @@ func ensureSchema(db *sql.DB) error {
 			depends_on_id TEXT NOT NULL,
 			PRIMARY KEY (issue_id, depends_on_id)
 		)`,
+		`CREATE TABLE IF NOT EXISTS renames (
+			old_id TEXT PRIMARY KEY,
+			new_id TEXT NOT NULL
+		)`,
 	}
 	// Execute each schema statement in order.
 	for _, query := range queries {
@@ -63,17 +68,67 @@ func applyEvent(db *sql.DB, event Event) error {
 	switch event.Type {
 	case EventTypeCreate:
 		return applyCreate(db, event)
+	case EventTypeRename:
+		return applyRename(db, event)
 	case EventTypeStatus:
-		return applyStatus(db, event)
+		resolved, err := resolveEventIssueID(db, event)
+		if err != nil {
+			return err
+		}
+		return applyStatus(db, resolved)
 	case EventTypeClose:
-		return applyClose(db, event)
+		resolved, err := resolveEventIssueID(db, event)
+		if err != nil {
+			return err
+		}
+		return applyClose(db, resolved)
 	case EventTypeDepAdd:
-		return applyDepAdd(db, event)
+		resolved, err := resolveEventDependencyIDs(db, event)
+		if err != nil {
+			return err
+		}
+		return applyDepAdd(db, resolved)
 	case EventTypeDepRemove:
-		return applyDepRemove(db, event)
+		resolved, err := resolveEventDependencyIDs(db, event)
+		if err != nil {
+			return err
+		}
+		return applyDepRemove(db, resolved)
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Type)
 	}
+}
+
+// resolveEventIssueID returns a copy of the event with a resolved IssueID.
+func resolveEventIssueID(db *sql.DB, event Event) (Event, error) {
+	resolvedID, err := resolveIssueID(db, event.IssueID)
+	if err != nil {
+		return Event{}, err
+	}
+	event.IssueID = resolvedID
+	return event, nil
+}
+
+// resolveEventDependencyIDs resolves dependency IDs to their current values.
+func resolveEventDependencyIDs(db *sql.DB, event Event) (Event, error) {
+	resolvedIssueID, err := resolveIssueID(db, event.IssueID)
+	if err != nil {
+		return Event{}, err
+	}
+	dependsOn := event.Payload["depends_on"]
+	if dependsOn == "" {
+		return Event{}, fmt.Errorf("dependency event missing depends_on")
+	}
+	// Resolve the dependency target before rewriting the event payload.
+	resolvedDependsOn, err := resolveIssueID(db, dependsOn)
+	if err != nil {
+		return Event{}, err
+	}
+	event.IssueID = resolvedIssueID
+	event.Payload = map[string]string{
+		"depends_on": resolvedDependsOn,
+	}
+	return event, nil
 }
 
 // applyCreate inserts a new issue from a create event.
@@ -104,6 +159,46 @@ func applyCreate(db *sql.DB, event Event) error {
 	)
 	if err != nil {
 		return fmt.Errorf("insert issue: %w", err)
+	}
+	return nil
+}
+
+// applyRename renames an issue ID and updates dependencies.
+func applyRename(db *sql.DB, event Event) error {
+	newID := event.Payload["new_id"]
+	if newID == "" {
+		return fmt.Errorf("rename event missing new_id")
+	}
+	// Resolve the current issue ID and validate the target ID.
+	resolvedOldID, err := resolveIssueID(db, event.IssueID)
+	if err != nil {
+		return err
+	}
+	resolvedNewID, err := resolveIssueID(db, newID)
+	if err != nil {
+		return err
+	}
+	if resolvedNewID != newID {
+		return fmt.Errorf("rename target already mapped to %s", resolvedNewID)
+	}
+	if resolvedOldID == newID {
+		return fmt.Errorf("rename target matches current id")
+	}
+	if err := ensureIssueExists(db, resolvedOldID); err != nil {
+		return err
+	}
+	if err := ensureIssueMissing(db, newID); err != nil {
+		return err
+	}
+	// Apply the rename across issues and dependencies, then persist the mapping.
+	if err := updateIssueID(db, resolvedOldID, newID, event.Timestamp); err != nil {
+		return err
+	}
+	if err := updateDepsForRename(db, resolvedOldID, newID); err != nil {
+		return err
+	}
+	if err := upsertRename(db, resolvedOldID, newID); err != nil {
+		return err
 	}
 	return nil
 }
@@ -195,13 +290,49 @@ func applyDepRemove(db *sql.DB, event Event) error {
 
 // ensureIssueExists verifies a referenced issue exists.
 func ensureIssueExists(db *sql.DB, issueID string) error {
-	var count int
-	row := db.QueryRow("SELECT COUNT(1) FROM issues WHERE id = ?", issueID)
-	if err := row.Scan(&count); err != nil {
-		return fmt.Errorf("check issue exists: %w", err)
+	exists, err := issueExists(db, issueID)
+	if err != nil {
+		return err
 	}
-	if count == 0 {
+	if !exists {
 		return fmt.Errorf("missing issue: %s", issueID)
+	}
+	return nil
+}
+
+// updateIssueID swaps issue IDs and stamps updated_at.
+func updateIssueID(db *sql.DB, oldID, newID, timestamp string) error {
+	result, err := db.Exec(
+		"UPDATE issues SET id = ?, updated_at = ? WHERE id = ?",
+		newID,
+		timestamp,
+		oldID,
+	)
+	if err != nil {
+		return fmt.Errorf("rename issue: %w", err)
+	}
+	return requireRow(result, "rename for missing issue")
+}
+
+// updateDepsForRename rewrites dependency edges for a renamed issue.
+func updateDepsForRename(db *sql.DB, oldID, newID string) error {
+	if _, err := db.Exec("UPDATE deps SET issue_id = ? WHERE issue_id = ?", newID, oldID); err != nil {
+		return fmt.Errorf("rename dependency issue_id: %w", err)
+	}
+	if _, err := db.Exec("UPDATE deps SET depends_on_id = ? WHERE depends_on_id = ?", newID, oldID); err != nil {
+		return fmt.Errorf("rename dependency depends_on_id: %w", err)
+	}
+	return nil
+}
+
+// upsertRename records an issue ID rename mapping.
+func upsertRename(db *sql.DB, oldID, newID string) error {
+	if _, err := db.Exec(
+		"INSERT OR REPLACE INTO renames (old_id, new_id) VALUES (?, ?)",
+		oldID,
+		newID,
+	); err != nil {
+		return fmt.Errorf("insert rename: %w", err)
 	}
 	return nil
 }

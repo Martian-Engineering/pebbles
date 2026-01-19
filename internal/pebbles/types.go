@@ -33,6 +33,8 @@ const (
 	EventTypeStatus = "status_update"
 	// EventTypeClose indicates a close event.
 	EventTypeClose = "close"
+	// EventTypeRename indicates an issue ID rename event.
+	EventTypeRename = "rename"
 	// EventTypeDepAdd indicates a dependency add event.
 	EventTypeDepAdd = "dep_add"
 	// EventTypeDepRemove indicates a dependency removal event.

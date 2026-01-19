@@ -24,6 +24,12 @@ func NewCloseEvent(issueID, timestamp string) Event {
 	return Event{Type: EventTypeClose, Timestamp: timestamp, IssueID: issueID, Payload: map[string]string{}}
 }
 
+// NewRenameEvent builds a rename event for an issue ID change.
+func NewRenameEvent(issueID, newIssueID, timestamp string) Event {
+	payload := map[string]string{"new_id": newIssueID}
+	return Event{Type: EventTypeRename, Timestamp: timestamp, IssueID: issueID, Payload: payload}
+}
+
 // NewDepAddEvent builds a dependency add event.
 func NewDepAddEvent(issueID, dependsOn, timestamp string) Event {
 	payload := map[string]string{"depends_on": dependsOn}
