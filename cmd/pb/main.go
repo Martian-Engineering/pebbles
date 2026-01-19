@@ -20,7 +20,7 @@ func main() {
 	// Validate the CLI entrypoint arguments before dispatching.
 	if len(os.Args) < 2 {
 		printUsage()
-		os.Exit(1)
+		return
 	}
 	cmd := os.Args[1]
 	args := os.Args[2:]
