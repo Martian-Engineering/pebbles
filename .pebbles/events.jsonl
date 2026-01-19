@@ -124,3 +124,9 @@
 {"type":"create","timestamp":"2026-01-19T19:50:01.552925Z","issue_id":"pb-cea","payload":{"description":"When rendering close events, include the issue description (from current issue state) in pb log details so the log retains context even though close payloads are empty.","priority":"2","title":"pb log: include description on close entries","type":"feature"}}
 {"type":"status_update","timestamp":"2026-01-19T19:50:09.734124Z","issue_id":"pb-cea","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-19T19:51:54.200416Z","issue_id":"pb-cea","payload":{}}
+{"type":"create","timestamp":"2026-01-19T19:57:48.235069Z","issue_id":"pb-8d7","payload":{"description":"Add dep_type support (blocks vs parent-child), update ready semantics, list indentation, CLI flags, and tests.","priority":"2","title":"Typed deps (blocks vs parent-child)","type":"epic"}}
+{"type":"dep_add","timestamp":"2026-01-19T19:57:56.705728Z","issue_id":"pb-8d7","payload":{"depends_on":"pb-975c8c06"}}
+{"type":"dep_add","timestamp":"2026-01-19T19:58:03.151975Z","issue_id":"pb-8d7","payload":{"depends_on":"pb-cc5b8f92"}}
+{"type":"dep_add","timestamp":"2026-01-19T19:58:12.663844Z","issue_id":"pb-8d7","payload":{"depends_on":"pb-79bb7b8b"}}
+{"type":"dep_add","timestamp":"2026-01-19T19:58:19.711824Z","issue_id":"pb-8d7","payload":{"depends_on":"pb-6666e840"}}
+{"type":"dep_add","timestamp":"2026-01-19T19:58:24.96031Z","issue_id":"pb-8d7","payload":{"depends_on":"pb-220d3ca7"}}
