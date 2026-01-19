@@ -22,3 +22,7 @@
 {"type":"close","timestamp":"2026-01-19T16:49:42.445937Z","issue_id":"pebbles-aa03707b","payload":{}}
 {"type":"close","timestamp":"2026-01-19T16:49:48.775124Z","issue_id":"pebbles-b7fdf344","payload":{}}
 {"type":"close","timestamp":"2026-01-19T16:49:55.126947Z","issue_id":"pebbles-c794f359","payload":{}}
+{"type":"create","timestamp":"2026-01-19T16:54:07.105377Z","issue_id":"pebbles-34cd3331","payload":{"description":"Testing new flags","priority":"1","title":"Test with options","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T17:07:52.129883Z","issue_id":"pebbles-c5428695","payload":{"description":"Document goals, scope, design constraints, and what not to build to keep Pebbles simple.","priority":"2","title":"Write Pebbles architecture document","type":"task"}}
+{"type":"status_update","timestamp":"2026-01-19T17:08:25.71541Z","issue_id":"pebbles-c5428695","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T17:08:30.664189Z","issue_id":"pebbles-c5428695","payload":{}}
