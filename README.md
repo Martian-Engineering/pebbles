@@ -15,7 +15,6 @@ Pebbles is a minimal, git-friendly issue tracker that uses an append-only event 
 go build -o pb ./cmd/pb
 ```
 
-For release binaries and curl-based install, see `docs/INSTALL.md`.
 
 ## Usage
 
@@ -156,5 +155,4 @@ data is unavailable (or `--no-git` is used), they render as `unknown`.
 - The event log is the source of truth. The SQLite cache is derived.
 - Git merges are safe because events are append-only.
 - Run `pb init` in the project root before using other commands.
-- Repo setup (including Martian-Engineering remote) is in `docs/REPO_SETUP.md`.
 - Release notes live in `CHANGELOG.md`.

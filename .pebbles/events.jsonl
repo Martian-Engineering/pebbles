@@ -182,3 +182,10 @@
 {"type":"close","timestamp":"2026-01-19T22:13:17.040084Z","issue_id":"pb-8fc","payload":{}}
 {"type":"status_update","timestamp":"2026-01-19T22:14:10.976029Z","issue_id":"pb-f07","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-19T22:15:14.885186Z","issue_id":"pb-f07","payload":{}}
+{"type":"create","timestamp":"2026-01-19T22:17:44.359703Z","issue_id":"pb-434","payload":{"description":"Delete docs/REPO_SETUP.md and remove README references now that remote will be set directly.","priority":"2","title":"Remove repo setup doc and clean README","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T22:17:51.185675Z","issue_id":"pb-364","payload":{"description":"Remove docs/INSTALL.md and update README to avoid pointing at a separate install doc until releases exist.","priority":"2","title":"Drop INSTALL.md until release","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T22:17:59.861609Z","issue_id":"pb-8e9","payload":{"description":"Create or configure the GitHub repo under Martian-Engineering and set origin remote.","priority":"2","title":"Set up Martian-Engineering GitHub repo/remote","type":"task"}}
+{"type":"status_update","timestamp":"2026-01-19T22:18:04.85357Z","issue_id":"pb-434","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T22:18:32.01158Z","issue_id":"pb-434","payload":{}}
+{"type":"status_update","timestamp":"2026-01-19T22:18:40.059341Z","issue_id":"pb-364","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T22:18:56.117969Z","issue_id":"pb-364","payload":{}}
