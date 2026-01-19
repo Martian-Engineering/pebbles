@@ -86,3 +86,5 @@
 {"type":"create","timestamp":"2026-01-19T18:26:17.996817Z","issue_id":"pb-1d1a91ce","payload":{"description":"Clarify that rename-prefix flags must precede the prefix argument (or adjust parser). Update help/README/usage to reduce confusion.","priority":"3","title":"Document rename-prefix flag ordering","type":"task"}}
 {"type":"status_update","timestamp":"2026-01-19T18:26:21.418182Z","issue_id":"pb-1d1a91ce","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-19T18:30:38.580631Z","issue_id":"pb-1d1a91ce","payload":{}}
+{"type":"status_update","timestamp":"2026-01-19T18:39:01.108516Z","issue_id":"pb-b6b78d55","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T18:57:19.037796Z","issue_id":"pb-b6b78d55","payload":{}}

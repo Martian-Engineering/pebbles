@@ -90,7 +90,18 @@ func runCreate(root string, args []string) {
 		exitError(err)
 	}
 	timestamp := pebbles.NowTimestamp()
-	issueID := pebbles.GenerateIssueID(cfg.Prefix, *title, timestamp, pebbles.HostLabel())
+	issueID, err := pebbles.GenerateUniqueIssueID(
+		cfg.Prefix,
+		*title,
+		timestamp,
+		pebbles.HostLabel(),
+		func(candidate string) (bool, error) {
+			return pebbles.IssueExists(root, candidate)
+		},
+	)
+	if err != nil {
+		exitError(err)
+	}
 	event := pebbles.NewCreateEvent(issueID, *title, *description, *issueType, timestamp, parsedPriority)
 	// Append to the event log, then rebuild the cache for reads.
 	if err := pebbles.AppendEvent(root, event); err != nil {

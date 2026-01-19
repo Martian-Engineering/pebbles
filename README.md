@@ -6,7 +6,7 @@ Pebbles is a minimal, git-friendly issue tracker that uses an append-only event 
 
 - Append-only event log: `.pebbles/events.jsonl`
 - SQLite cache: `.pebbles/pebbles.db` (rebuilt from the log)
-- Deterministic IDs: project prefix + hash of title + timestamp + host
+- Deterministic IDs: project prefix + hash of title + timestamp + host (3-char suffix by default; expands on collision)
 
 ## Install
 
@@ -27,16 +27,16 @@ pb create --title="Add login" --type=task --priority=P2 --description="Track log
 pb list
 
 # Show issue details
-pb show pb-abc12345
+pb show pb-abc
 
 # Update status
-pb update pb-abc12345 --status in_progress
+pb update pb-abc --status in_progress
 
 # Close an issue
-pb close pb-abc12345
+pb close pb-abc
 
 # Rename an issue id
-pb rename pb-abc12345 pb-new1234
+pb rename pb-abc pb-new
 
 # Rename open issues to a new prefix (flags before prefix)
 pb rename-prefix --open peb
