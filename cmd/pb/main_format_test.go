@@ -22,7 +22,8 @@ func TestFormatIssueLineColors(t *testing.T) {
 		Status:    pebbles.StatusInProgress,
 		Priority:  0,
 	}
-	output := formatIssueLine(issue, 0)
+	widths := issueColumnWidthsForIssues([]pebbles.Issue{issue})
+	output := formatIssueLine(issue, 0, widths)
 	if !strings.Contains(output, ansiBrightYellow) {
 		t.Fatalf("expected status color in output: %q", output)
 	}

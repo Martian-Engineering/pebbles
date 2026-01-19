@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"pebbles/internal/pebbles"
 )
@@ -128,8 +129,9 @@ func runList(root string, args []string) {
 	if err != nil {
 		exitError(err)
 	}
+	widths := issueColumnWidthsForHierarchy(issues)
 	for _, item := range issues {
-		fmt.Println(formatIssueLine(item.Issue, item.Depth))
+		fmt.Println(formatIssueLine(item.Issue, item.Depth, widths))
 	}
 }
 
@@ -359,8 +361,9 @@ func runReady(root string, args []string) {
 	if err != nil {
 		exitError(err)
 	}
+	widths := issueColumnWidthsForIssues(issues)
 	for _, issue := range issues {
-		fmt.Println(formatIssueLine(issue, 0))
+		fmt.Println(formatIssueLine(issue, 0, widths))
 	}
 }
 
@@ -621,19 +624,103 @@ func exitError(err error) {
 	os.Exit(1)
 }
 
+// issueColumnWidths stores column widths for list formatting.
+type issueColumnWidths struct {
+	status    int
+	id        int
+	priority  int
+	issueType int
+}
+
+// issueColumnWidthsForHierarchy computes display widths for a hierarchy list.
+func issueColumnWidthsForHierarchy(items []pebbles.IssueHierarchyItem) issueColumnWidths {
+	var widths issueColumnWidths
+	for _, item := range items {
+		updateIssueColumnWidths(&widths, item.Issue)
+	}
+	return widths
+}
+
+// issueColumnWidthsForIssues computes display widths for a flat list.
+func issueColumnWidthsForIssues(issues []pebbles.Issue) issueColumnWidths {
+	var widths issueColumnWidths
+	for _, issue := range issues {
+		updateIssueColumnWidths(&widths, issue)
+	}
+	return widths
+}
+
+// updateIssueColumnWidths expands column widths to fit the issue fields.
+func updateIssueColumnWidths(widths *issueColumnWidths, issue pebbles.Issue) {
+	statusIcon := pebbles.StatusIcon(issue.Status)
+	priority := priorityDisplay(issue)
+	widths.status = maxWidth(widths.status, displayWidth(statusIcon))
+	widths.id = maxWidth(widths.id, displayWidth(issue.ID))
+	widths.priority = maxWidth(widths.priority, displayWidth(priority))
+	widths.issueType = maxWidth(widths.issueType, displayWidth(issue.IssueType))
+}
+
+// maxWidth returns the larger of two widths.
+func maxWidth(current, candidate int) int {
+	if candidate > current {
+		return candidate
+	}
+	return current
+}
+
+// displayWidth returns the rune width of a display string.
+func displayWidth(value string) int {
+	return utf8.RuneCountInString(value)
+}
+
+// visibleWidth returns the display width of a string without ANSI escapes.
+func visibleWidth(value string) int {
+	width := 0
+	for i := 0; i < len(value); i++ {
+		if value[i] == '\x1b' && i+1 < len(value) && value[i+1] == '[' {
+			i += 2
+			for i < len(value) && value[i] != 'm' {
+				i++
+			}
+			continue
+		}
+		_, size := utf8.DecodeRuneInString(value[i:])
+		width++
+		i += size - 1
+	}
+	return width
+}
+
+// padDisplay right-pads a value based on visible width.
+func padDisplay(value string, width int) string {
+	if width <= 0 {
+		return value
+	}
+	padding := width - visibleWidth(value)
+	if padding <= 0 {
+		return value
+	}
+	return value + strings.Repeat(" ", padding)
+}
+
+// priorityDisplay formats the priority string used in list output.
+func priorityDisplay(issue pebbles.Issue) string {
+	return fmt.Sprintf("● %s", pebbles.PriorityLabel(issue.Priority))
+}
+
 // formatIssueLine returns a formatted list output for an issue.
-func formatIssueLine(issue pebbles.Issue, depth int) string {
+func formatIssueLine(issue pebbles.Issue, depth int, widths issueColumnWidths) string {
 	indent := strings.Repeat("  ", depth)
 	statusIcon := renderStatusIcon(issue.Status)
-	priorityLabel := renderPriorityLabel(issue.Priority)
+	priorityLabel := fmt.Sprintf("● %s", renderPriorityLabel(issue.Priority))
 	issueType := renderIssueType(issue.IssueType)
 	return fmt.Sprintf(
-		"%s%s %s [● %s] [%s] - %s",
+		"%s%s %s [%s] [%s] - %s",
 		indent,
-		statusIcon,
-		issue.ID,
-		priorityLabel,
-		issueType,
+		padDisplay(statusIcon, widths.status),
+		padDisplay(issue.ID, widths.id),
+		padDisplay(priorityLabel, widths.priority),
+		padDisplay(issueType, widths.issueType),
 		issue.Title,
 	)
 }
