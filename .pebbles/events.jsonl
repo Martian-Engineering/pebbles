@@ -199,3 +199,5 @@
 {"type":"close","timestamp":"2026-01-19T22:45:00.397334Z","issue_id":"pb-e1a","payload":{}}
 {"type":"create","timestamp":"2026-01-19T22:45:47.524633Z","issue_id":"pb-3ee","payload":{"description":"Add ANSI color support for pb log pretty output (respect NO_COLOR/PB_NO_COLOR). Consider styling event headers and key fields.","priority":"2","title":"Add colored output for pb log","type":"feature"}}
 {"type":"create","timestamp":"2026-01-19T22:47:09.455289Z","issue_id":"pb-55d","payload":{"description":"Extend pb update to edit issue type, description, and priority (and define event schema/mappings).","priority":"2","title":"Support updating issue fields","type":"feature"}}
+{"type":"status_update","timestamp":"2026-01-19T22:51:26.229701Z","issue_id":"pb-55d","payload":{"status":"in_progress"}}
+{"type":"comment","timestamp":"2026-01-19T22:51:32.432405Z","issue_id":"pb-55d","payload":{"body":"Include update -h usage output and README usage section updates when adding new fields."}}
