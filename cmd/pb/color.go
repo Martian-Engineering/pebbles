@@ -50,7 +50,7 @@ func statusColor(status string) string {
 	case pebbles.StatusInProgress:
 		return ansiBrightYellow
 	case pebbles.StatusClosed:
-		return ansiDim + ansiGray
+		return ansiGray
 	default:
 		return ""
 	}
