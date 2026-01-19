@@ -58,7 +58,45 @@ pb dep tree pb-issue-a
 
 # List ready issues (no open blockers)
 pb ready
+
+# Show the event log
+pb log --limit 20
 ```
+
+## Log Output
+
+`pb log` prints one line per event, newest-first by timestamp:
+
+```
+<actor> <actor_date> <event_time> <type> <issue_id> <title> [details]
+```
+
+Example:
+
+```
+unknown         unknown    2026-01-19 10:42:11 create     pebbles-7c9ef95f Add pb log command                     type=epic priority=P1
+Josh Lehman     2026-01-19 2026-01-19 10:45:12 status     pebbles-7c9ef95f Add pb log command                     status=in_progress
+```
+
+Columns are padded to fixed widths; long values are truncated with `...`.
+
+Details are rendered per event type:
+
+- create: `type=<issue_type> priority=<P0-P4>`
+- status_update: `status=<status>`
+- dep_add/dep_rm: `depends_on=<issue_id>`
+- unknown types: payload key/value pairs ordered as `title`, `description`,
+  `type`, `priority`, `status`, `depends_on`, then alphabetically
+
+Flags:
+
+- `--limit`/`-n`: limit number of events
+- `--since`, `--until`: filter by timestamp (RFC3339/RFC3339Nano or YYYY-MM-DD)
+- `--no-git`: skip git blame attribution
+- `--json`: emit JSON lines instead of the column view
+
+Actor and actor_date come from `git blame` of `.pebbles/events.jsonl`. When git
+data is unavailable (or `--no-git` is used), they render as `unknown`.
 
 ## Notes
 

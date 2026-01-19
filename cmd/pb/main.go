@@ -47,6 +47,8 @@ func main() {
 		runRename(root, args)
 	case "rename-prefix":
 		runRenamePrefix(root, args)
+	case "log":
+		runLog(root, args)
 	case "help":
 		printUsage()
 	default:
@@ -446,7 +448,6 @@ func runRenamePrefix(root string, args []string) {
 	}
 	fmt.Printf("Renamed %d issues to %s\n", len(events), newPrefix)
 }
-
 // ensureProject checks that the .pebbles directory exists.
 func ensureProject(root string) error {
 	if _, err := os.Stat(pebbles.EventsPath(root)); err != nil {
@@ -513,6 +514,7 @@ func printUsage() {
 	fmt.Println("  rename      Rename an issue id")
 	fmt.Println("  rename-prefix Rename issues to a new prefix (flags before prefix)")
 	fmt.Println("  ready       Show issues ready to work (no blockers)")
+	fmt.Println("  log         Show the event log")
 	fmt.Println("")
 	fmt.Println("Dependencies:")
 	fmt.Println("  dep add     Add a dependency")

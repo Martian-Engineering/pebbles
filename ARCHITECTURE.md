@@ -78,6 +78,7 @@ The CLI intentionally matches a small subset of Beads:
 
 - init
 - create, list, show, update, close, ready
+- log
 - dep add, dep rm, dep tree
 - help
 

@@ -88,3 +88,10 @@
 {"type":"close","timestamp":"2026-01-19T18:30:38.580631Z","issue_id":"pb-1d1a91ce","payload":{}}
 {"type":"status_update","timestamp":"2026-01-19T18:39:01.108516Z","issue_id":"pb-b6b78d55","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-19T18:57:19.037796Z","issue_id":"pb-b6b78d55","payload":{}}
+{"type":"create","timestamp":"2026-01-19T19:03:39.177183Z","issue_id":"pb-ded","payload":{"description":"Add documentation for pb list (usage, options, filtering) in README or docs, since pb list -h currently prints only 'Usage of list'.","priority":"3","title":"Document pb list usage/flags","type":"task"}}
+{"type":"close","timestamp":"2026-01-19T19:17:21.868849Z","issue_id":"pb-277f1c2b","payload":{}}
+{"type":"close","timestamp":"2026-01-19T19:17:28.561178Z","issue_id":"pb-ba5238a7","payload":{}}
+{"type":"close","timestamp":"2026-01-19T19:17:35.628806Z","issue_id":"pb-e4455245","payload":{}}
+{"type":"close","timestamp":"2026-01-19T19:17:39.582279Z","issue_id":"pb-d4b3e006","payload":{}}
+{"type":"close","timestamp":"2026-01-19T19:17:43.270476Z","issue_id":"pb-d4efc478","payload":{}}
+{"type":"close","timestamp":"2026-01-19T19:17:49.518224Z","issue_id":"pb-7c9ef95f","payload":{}}
