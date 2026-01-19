@@ -15,6 +15,8 @@ Pebbles is a minimal, git-friendly issue tracker that uses an append-only event 
 go build -o pb ./cmd/pb
 ```
 
+For release binaries and curl-based install, see `docs/INSTALL.md`.
+
 ## Usage
 
 ```bash
