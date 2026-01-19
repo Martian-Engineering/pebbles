@@ -59,26 +59,32 @@ pb dep tree pb-issue-a
 # List ready issues (no open blockers)
 pb ready
 
-# Show the event log
+# Show the event log (pretty view)
 pb log --limit 20
+
+# Show the event log in table view
+pb log --table --limit 20
 ```
 
 ## Log Output
 
-`pb log` prints one line per event, newest-first by timestamp:
+`pb log` prints a multi-line, human-friendly block per event (newest-first by
+timestamp):
+
+```
+event 12 status pb-7c9ef95f
+Title: Add pb log command
+When:  2026-01-19 10:45:12
+Actor: Josh Lehman (2026-01-19)
+Details:
+  status=in_progress
+```
+
+Use `--table` for the compact column view:
 
 ```
 <actor> <actor_date> <event_time> <type> <issue_id> <title> [details]
 ```
-
-Example:
-
-```
-unknown         unknown    2026-01-19 10:42:11 create     pebbles-7c9ef95f Add pb log command                     type=epic priority=P1
-Josh Lehman     2026-01-19 2026-01-19 10:45:12 status     pebbles-7c9ef95f Add pb log command                     status=in_progress
-```
-
-Columns are padded to fixed widths; long values are truncated with `...`.
 
 Details are rendered per event type:
 
@@ -93,7 +99,14 @@ Flags:
 - `--limit`/`-n`: limit number of events
 - `--since`, `--until`: filter by timestamp (RFC3339/RFC3339Nano or YYYY-MM-DD)
 - `--no-git`: skip git blame attribution
-- `--json`: emit JSON lines instead of the column view
+- `--json`: emit JSON lines instead of the pretty view
+- `--table`: use the compact column view
+- `--no-pager`: disable paging
+
+Paging:
+
+- When stdout is a TTY (and not `--json`), output is piped to a pager.
+- Pager selection order: `PB_PAGER`, then `PAGER`, then `less -FRX`.
 
 Actor and actor_date come from `git blame` of `.pebbles/events.jsonl`. When git
 data is unavailable (or `--no-git` is used), they render as `unknown`.

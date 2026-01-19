@@ -164,3 +164,80 @@ func TestParseGitBlame(t *testing.T) {
 		t.Fatalf("unexpected attribution: %+v", attributions[1])
 	}
 }
+
+// TestFormatPrettyLogWithDetails ensures pretty output includes details lines.
+func TestFormatPrettyLogWithDetails(t *testing.T) {
+	entry := logEntry{
+		Entry: pebbles.EventLogEntry{
+			Line:  5,
+			Event: pebbles.Event{Type: pebbles.EventTypeCreate, IssueID: "pb-1", Payload: map[string]string{"type": "task", "priority": "2"}},
+		},
+		ParsedTime: time.Date(2026, 1, 19, 10, 0, 0, 0, time.UTC),
+		ParsedOK:   true,
+	}
+	line := logLine{
+		Actor:      "Josh",
+		ActorDate:  "2026-01-19",
+		EventTime:  "2026-01-19 10:00:00",
+		EventType:  "create",
+		IssueID:    "pb-1",
+		IssueTitle: "Pretty Log",
+	}
+	output := formatPrettyLog(entry, line)
+	if !strings.Contains(output, "event 5 create pb-1") {
+		t.Fatalf("missing header: %q", output)
+	}
+	if !strings.Contains(output, "Details:\n  type=task\n  priority=P2") {
+		t.Fatalf("missing detail lines: %q", output)
+	}
+}
+
+// TestFormatPrettyLogNoDetails ensures empty payloads show (none).
+func TestFormatPrettyLogNoDetails(t *testing.T) {
+	entry := logEntry{
+		Entry: pebbles.EventLogEntry{
+			Line:  2,
+			Event: pebbles.Event{Type: pebbles.EventTypeClose, IssueID: "pb-2"},
+		},
+	}
+	line := logLine{
+		Actor:      "unknown",
+		ActorDate:  "unknown",
+		EventTime:  "2026-01-19 10:00:00",
+		EventType:  "close",
+		IssueID:    "pb-2",
+		IssueTitle: "Closed",
+	}
+	output := formatPrettyLog(entry, line)
+	if !strings.Contains(output, "Details: (none)") {
+		t.Fatalf("expected no-details marker: %q", output)
+	}
+}
+
+// TestShouldUsePager verifies pager selection logic.
+func TestShouldUsePager(t *testing.T) {
+	if shouldUsePager(true, true) {
+		t.Fatalf("expected no pager when disabled")
+	}
+	if shouldUsePager(false, false) {
+		t.Fatalf("expected no pager when not a tty")
+	}
+	if !shouldUsePager(false, true) {
+		t.Fatalf("expected pager when enabled on tty")
+	}
+}
+
+// TestResolvePagerCommand verifies env override order.
+func TestResolvePagerCommand(t *testing.T) {
+	t.Setenv("PB_PAGER", "more")
+	t.Setenv("PAGER", "less -FRX")
+	command := resolvePagerCommand()
+	if len(command) != 1 || command[0] != "more" {
+		t.Fatalf("expected PB_PAGER to win, got %v", command)
+	}
+	t.Setenv("PB_PAGER", "")
+	command = resolvePagerCommand()
+	if len(command) == 0 || command[0] != "less" {
+		t.Fatalf("expected PAGER fallback, got %v", command)
+	}
+}

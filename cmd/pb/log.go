@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -84,6 +85,8 @@ func runLog(root string, args []string) {
 	sinceInput := fs.String("since", "", "Only show events on or after timestamp")
 	untilInput := fs.String("until", "", "Only show events on or before timestamp")
 	noGit := fs.Bool("no-git", false, "Skip git blame attribution")
+	table := fs.Bool("table", false, "Use table output")
+	noPager := fs.Bool("no-pager", false, "Disable pager")
 	jsonOut := fs.Bool("json", false, "Output JSON lines")
 	_ = fs.Parse(args)
 	// Ensure the event log is available before reading.
@@ -127,7 +130,28 @@ func runLog(root string, args []string) {
 			attributions = nil
 		}
 	}
-	for _, entry := range filtered {
+	// JSON output is streamed directly to stdout (no pager).
+	if *jsonOut {
+		for _, entry := range filtered {
+			attribution := attributionForLine(attributions, entry.Entry.Line)
+			line := logLine{
+				Actor:      attribution.Author,
+				ActorDate:  attribution.Date,
+				EventTime:  formatEventTime(entry),
+				EventType:  logEventLabel(entry.Entry.Event),
+				IssueID:    entry.Entry.Event.IssueID,
+				IssueTitle: titleForIssue(titles, entry.Entry.Event.IssueID),
+				Details:    logEventDetails(entry.Entry.Event),
+			}
+			if err := printLogJSON(entry, line); err != nil {
+				exitError(err)
+			}
+		}
+		return
+	}
+	// Build formatted output before writing to a pager or stdout.
+	var output strings.Builder
+	for index, entry := range filtered {
 		attribution := attributionForLine(attributions, entry.Entry.Line)
 		line := logLine{
 			Actor:      attribution.Author,
@@ -138,13 +162,23 @@ func runLog(root string, args []string) {
 			IssueTitle: titleForIssue(titles, entry.Entry.Event.IssueID),
 			Details:    logEventDetails(entry.Entry.Event),
 		}
-		if *jsonOut {
-			if err := printLogJSON(entry, line); err != nil {
-				exitError(err)
-			}
+		// Render the selected view for each entry.
+		if *table {
+			output.WriteString(formatLogLine(line, defaultLogColumnWidths))
+			output.WriteString("\n")
 			continue
 		}
-		fmt.Println(formatLogLine(line, defaultLogColumnWidths))
+		output.WriteString(formatPrettyLog(entry, line))
+		if index < len(filtered)-1 {
+			output.WriteString("\n\n")
+		} else {
+			output.WriteString("\n")
+		}
+	}
+	// Decide whether to use a pager and write output.
+	usePager := shouldUsePager(*noPager, isTTY(os.Stdout))
+	if err := writeLogOutput(output.String(), usePager); err != nil {
+		exitError(err)
 	}
 }
 
@@ -275,6 +309,33 @@ func logEventDetails(event pebbles.Event) string {
 	return ""
 }
 
+// logEventDetailLines returns payload details formatted as individual lines.
+func logEventDetailLines(event pebbles.Event) []string {
+	switch event.Type {
+	case pebbles.EventTypeCreate:
+		// Limit create output to the fields that matter in logs.
+		var lines []string
+		if issueType := event.Payload["type"]; issueType != "" {
+			lines = append(lines, fmt.Sprintf("type=%s", issueType))
+		}
+		if priority := event.Payload["priority"]; priority != "" {
+			lines = append(lines, fmt.Sprintf("priority=%s", formatPriority(priority)))
+		}
+		return lines
+	case pebbles.EventTypeStatus:
+		if status := event.Payload["status"]; status != "" {
+			return []string{fmt.Sprintf("status=%s", status)}
+		}
+	case pebbles.EventTypeDepAdd, pebbles.EventTypeDepRemove:
+		if dependsOn := event.Payload["depends_on"]; dependsOn != "" {
+			return []string{fmt.Sprintf("depends_on=%s", dependsOn)}
+		}
+	default:
+		return formatPayloadLines(event.Payload)
+	}
+	return nil
+}
+
 // formatPriority normalizes priority payload values as P0-P4 when possible.
 func formatPriority(value string) string {
 	parsed, err := pebbles.ParsePriority(value)
@@ -282,6 +343,19 @@ func formatPriority(value string) string {
 		return value
 	}
 	return pebbles.PriorityLabel(parsed)
+}
+
+// formatPayloadLines formats payload key/value pairs as individual lines.
+func formatPayloadLines(payload map[string]string) []string {
+	if len(payload) == 0 {
+		return nil
+	}
+	keys := orderedPayloadKeys(payload)
+	lines := make([]string, 0, len(keys))
+	for _, key := range keys {
+		lines = append(lines, fmt.Sprintf("%s=%s", key, formatPayloadValue(key, payload[key])))
+	}
+	return lines
 }
 
 // formatPayloadPairs formats payload pairs for unknown event types.
@@ -332,6 +406,32 @@ func formatPayloadValue(key, value string) string {
 	return value
 }
 
+// formatPrettyLog renders a multi-line log entry for humans.
+func formatPrettyLog(entry logEntry, line logLine) string {
+	var output strings.Builder
+	// Header line includes the log line number, event type, and issue id.
+	output.WriteString(fmt.Sprintf("event %d %s %s\n", entry.Entry.Line, line.EventType, line.IssueID))
+	// Add core metadata lines with aligned labels.
+	output.WriteString(fmt.Sprintf("Title: %s\n", line.IssueTitle))
+	output.WriteString(fmt.Sprintf("When:  %s\n", line.EventTime))
+	output.WriteString(fmt.Sprintf("Actor: %s (%s)\n", line.Actor, line.ActorDate))
+	// Render payload details with indentation or an explicit none marker.
+	details := logEventDetailLines(entry.Entry.Event)
+	if len(details) == 0 {
+		output.WriteString("Details: (none)")
+		return output.String()
+	}
+	output.WriteString("Details:\n")
+	for index, detail := range details {
+		output.WriteString("  ")
+		output.WriteString(detail)
+		if index < len(details)-1 {
+			output.WriteString("\n")
+		}
+	}
+	return output.String()
+}
+
 // formatLogLine renders columns with padding and optional details.
 func formatLogLine(line logLine, widths logColumnWidths) string {
 	columns := []string{
@@ -361,6 +461,56 @@ func padOrTrim(value string, width int) string {
 		return value[:width-3] + "..."
 	}
 	return fmt.Sprintf("%-*s", width, value)
+}
+
+// isTTY reports whether a file handle refers to a terminal.
+func isTTY(file *os.File) bool {
+	info, err := file.Stat()
+	if err != nil {
+		return false
+	}
+	return info.Mode()&os.ModeCharDevice != 0
+}
+
+// shouldUsePager decides whether to route output through a pager.
+func shouldUsePager(noPager bool, tty bool) bool {
+	if noPager {
+		return false
+	}
+	return tty
+}
+
+// resolvePagerCommand returns the pager command to execute.
+func resolvePagerCommand() []string {
+	if value := strings.TrimSpace(os.Getenv("PB_PAGER")); value != "" {
+		return strings.Fields(value)
+	}
+	if value := strings.TrimSpace(os.Getenv("PAGER")); value != "" {
+		return strings.Fields(value)
+	}
+	return []string{"less", "-FRX"}
+}
+
+// writeLogOutput writes output to stdout or through a pager when requested.
+func writeLogOutput(output string, usePager bool) error {
+	if !usePager {
+		_, err := fmt.Fprint(os.Stdout, output)
+		return err
+	}
+	pager := resolvePagerCommand()
+	if len(pager) == 0 {
+		_, err := fmt.Fprint(os.Stdout, output)
+		return err
+	}
+	// Pipe the full output to the pager's stdin.
+	cmd := exec.Command(pager[0], pager[1:]...)
+	cmd.Stdin = strings.NewReader(output)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		_, _ = fmt.Fprint(os.Stdout, output)
+	}
+	return nil
 }
 
 // parseOptionalTimestamp parses a timestamp string if provided.

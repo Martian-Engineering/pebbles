@@ -95,3 +95,26 @@
 {"type":"close","timestamp":"2026-01-19T19:17:39.582279Z","issue_id":"pb-d4b3e006","payload":{}}
 {"type":"close","timestamp":"2026-01-19T19:17:43.270476Z","issue_id":"pb-d4efc478","payload":{}}
 {"type":"close","timestamp":"2026-01-19T19:17:49.518224Z","issue_id":"pb-7c9ef95f","payload":{}}
+{"type":"create","timestamp":"2026-01-19T19:26:43.293425Z","issue_id":"pb-6fe","payload":{"description":"Make pb log human-friendly: multi-line commit-like entries, nice formatting, and pager support; consider keeping table format behind a flag.","priority":"2","title":"Improve pb log presentation (git log style)","type":"feature"}}
+{"type":"status_update","timestamp":"2026-01-19T19:26:51.157648Z","issue_id":"pb-6fe","payload":{"status":"in_progress"}}
+{"type":"create","timestamp":"2026-01-19T19:29:10.624981Z","issue_id":"pb-770","payload":{"description":"Implement the default multi-line pretty format described in docs/pb-log.md, including details rendering and blank-line separation.","priority":"2","title":"pb log: pretty formatter","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T19:29:15.002152Z","issue_id":"pb-a55","payload":{"description":"Add TTY-aware pager support per docs/pb-log.md (PB_PAGER/PAGER/less -FRX, --no-pager, skip for --json).","priority":"2","title":"pb log: pager support","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T19:29:23.456896Z","issue_id":"pb-5f6","payload":{"description":"Add --table (and --no-pager) flags, make pretty view the default, and update help strings per docs/pb-log.md.","priority":"2","title":"pb log: table flag + default selection","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T19:29:28.113558Z","issue_id":"pb-c90","payload":{"description":"Add tests for pretty formatter output and no-pager/pager decision logic per docs/pb-log.md.","priority":"2","title":"pb log: tests for pretty/pager","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T19:29:38.53284Z","issue_id":"pb-485","payload":{"description":"Update README with new default pretty view, --table, and pager behavior per docs/pb-log.md.","priority":"3","title":"pb log: README updates","type":"task"}}
+{"type":"dep_add","timestamp":"2026-01-19T19:29:46.256525Z","issue_id":"pb-6fe","payload":{"depends_on":"pb-770"}}
+{"type":"dep_add","timestamp":"2026-01-19T19:29:52.453189Z","issue_id":"pb-6fe","payload":{"depends_on":"pb-a55"}}
+{"type":"dep_add","timestamp":"2026-01-19T19:29:58.463976Z","issue_id":"pb-6fe","payload":{"depends_on":"pb-5f6"}}
+{"type":"dep_add","timestamp":"2026-01-19T19:30:07.338927Z","issue_id":"pb-6fe","payload":{"depends_on":"pb-c90"}}
+{"type":"dep_add","timestamp":"2026-01-19T19:30:11.184297Z","issue_id":"pb-6fe","payload":{"depends_on":"pb-485"}}
+{"type":"status_update","timestamp":"2026-01-19T19:32:40.579648Z","issue_id":"pb-770","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T19:32:46.556229Z","issue_id":"pb-a55","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T19:32:51.928044Z","issue_id":"pb-5f6","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T19:32:58.25426Z","issue_id":"pb-c90","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T19:33:03.930456Z","issue_id":"pb-485","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T19:37:50.814801Z","issue_id":"pb-770","payload":{}}
+{"type":"close","timestamp":"2026-01-19T19:37:58.912334Z","issue_id":"pb-a55","payload":{}}
+{"type":"close","timestamp":"2026-01-19T19:38:05.075356Z","issue_id":"pb-5f6","payload":{}}
+{"type":"close","timestamp":"2026-01-19T19:38:08.85209Z","issue_id":"pb-c90","payload":{}}
+{"type":"close","timestamp":"2026-01-19T19:38:15.350289Z","issue_id":"pb-485","payload":{}}
+{"type":"close","timestamp":"2026-01-19T19:38:19.888315Z","issue_id":"pb-6fe","payload":{}}

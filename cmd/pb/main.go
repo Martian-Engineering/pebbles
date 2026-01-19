@@ -514,7 +514,7 @@ func printUsage() {
 	fmt.Println("  rename      Rename an issue id")
 	fmt.Println("  rename-prefix Rename issues to a new prefix (flags before prefix)")
 	fmt.Println("  ready       Show issues ready to work (no blockers)")
-	fmt.Println("  log         Show the event log")
+	fmt.Println("  log         Show the event log (pretty view)")
 	fmt.Println("")
 	fmt.Println("Dependencies:")
 	fmt.Println("  dep add     Add a dependency")
