@@ -512,25 +512,93 @@ func formatPayloadValue(key, value string) string {
 	return value
 }
 
+// logEventTypeColor returns the ANSI color for a log event label.
+func logEventTypeColor(eventType string) string {
+	// Keep event colors distinct so each log entry is easy to scan.
+	switch strings.ToLower(eventType) {
+	case "create":
+		return ansiBrightBlue
+	case "status":
+		return ansiBrightYellow
+	case "close":
+		return ansiBrightGreen
+	case "comment":
+		return ansiBrightMagenta
+	case "dep_add":
+		return ansiCyan
+	case "dep_rm":
+		return ansiRed
+	default:
+		return ansiYellow
+	}
+}
+
+// renderLogEventType returns a colored event label when enabled.
+func renderLogEventType(eventType string) string {
+	return colorize(eventType, logEventTypeColor(eventType))
+}
+
+// renderLogLabel applies muted styling to log field labels.
+func renderLogLabel(label string) string {
+	return colorize(label, ansiDim+ansiGray)
+}
+
+// renderLogIssueID returns a colored issue ID for log output.
+func renderLogIssueID(issueID string) string {
+	return colorize(issueID, ansiCyan)
+}
+
+// renderLogDetail formats a log detail key/value with ANSI styling.
+func renderLogDetail(detail string) string {
+	parts := strings.SplitN(detail, "=", 2)
+	if len(parts) != 2 {
+		return detail
+	}
+	key := parts[0]
+	value := parts[1]
+	return renderLogLabel(key) + "=" + renderLogDetailValue(key, value)
+}
+
+// renderLogDetailValue returns a colored detail value when enabled.
+func renderLogDetailValue(key, value string) string {
+	// Use existing list/show color rules for known detail values.
+	switch key {
+	case "status":
+		return renderStatusValue(value)
+	case "priority":
+		priority, err := pebbles.ParsePriority(value)
+		if err != nil {
+			return value
+		}
+		return renderPriorityLabel(priority)
+	case "type":
+		return renderIssueType(value)
+	case "depends_on":
+		return renderLogIssueID(value)
+	default:
+		return value
+	}
+}
+
 // formatPrettyLog renders a multi-line log entry for humans.
 func formatPrettyLog(entry logEntry, line logLine) string {
 	var output strings.Builder
 	// Header line includes the log line number, event type, and issue id.
-	output.WriteString(fmt.Sprintf("event %d %s %s\n", entry.Entry.Line, line.EventType, line.IssueID))
+	output.WriteString(fmt.Sprintf("%s %d %s %s\n", renderLogLabel("event"), entry.Entry.Line, renderLogEventType(line.EventType), renderLogIssueID(line.IssueID)))
 	// Add core metadata lines with aligned labels.
-	output.WriteString(fmt.Sprintf("Title: %s\n", line.IssueTitle))
-	output.WriteString(fmt.Sprintf("When:  %s\n", line.EventTime))
-	output.WriteString(fmt.Sprintf("Actor: %s (%s)\n", line.Actor, line.ActorDate))
+	output.WriteString(fmt.Sprintf("%s %s\n", renderLogLabel("Title:"), colorize(line.IssueTitle, ansiBold)))
+	output.WriteString(fmt.Sprintf("%s  %s\n", renderLogLabel("When:"), line.EventTime))
+	output.WriteString(fmt.Sprintf("%s %s (%s)\n", renderLogLabel("Actor:"), line.Actor, line.ActorDate))
 	// Render payload details with indentation or an explicit none marker.
 	details := logEventDetailLines(entry.Entry.Event)
 	if len(details) == 0 {
-		output.WriteString("Details: (none)")
+		output.WriteString(fmt.Sprintf("%s %s", renderLogLabel("Details:"), renderLogLabel("(none)")))
 		return output.String()
 	}
-	output.WriteString("Details:\n")
+	output.WriteString(fmt.Sprintf("%s\n", renderLogLabel("Details:")))
 	for index, detail := range details {
 		output.WriteString("  ")
-		output.WriteString(detail)
+		output.WriteString(renderLogDetail(detail))
 		if index < len(details)-1 {
 			output.WriteString("\n")
 		}

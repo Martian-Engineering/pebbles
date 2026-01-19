@@ -182,6 +182,12 @@ func TestParseGitBlame(t *testing.T) {
 
 // TestFormatPrettyLogWithDetails ensures pretty output includes details lines.
 func TestFormatPrettyLogWithDetails(t *testing.T) {
+	previous := colorEnabled
+	colorEnabled = false
+	defer func() {
+		colorEnabled = previous
+	}()
+
 	entry := logEntry{
 		Entry: pebbles.EventLogEntry{
 			Line:  5,
@@ -209,6 +215,12 @@ func TestFormatPrettyLogWithDetails(t *testing.T) {
 
 // TestFormatPrettyLogNoDetails ensures empty payloads show (none).
 func TestFormatPrettyLogNoDetails(t *testing.T) {
+	previous := colorEnabled
+	colorEnabled = false
+	defer func() {
+		colorEnabled = previous
+	}()
+
 	entry := logEntry{
 		Entry: pebbles.EventLogEntry{
 			Line:  2,
@@ -226,6 +238,42 @@ func TestFormatPrettyLogNoDetails(t *testing.T) {
 	output := formatPrettyLog(entry, line)
 	if !strings.Contains(output, "Details: (none)") {
 		t.Fatalf("expected no-details marker: %q", output)
+	}
+}
+
+// TestFormatPrettyLogColors verifies ANSI styling is applied when enabled.
+func TestFormatPrettyLogColors(t *testing.T) {
+	previous := colorEnabled
+	colorEnabled = true
+	defer func() {
+		colorEnabled = previous
+	}()
+
+	entry := logEntry{
+		Entry: pebbles.EventLogEntry{
+			Line:  7,
+			Event: pebbles.Event{Type: pebbles.EventTypeCreate, IssueID: "pb-9", Payload: map[string]string{"type": "task", "priority": "1"}},
+		},
+		ParsedTime: time.Date(2026, 1, 19, 10, 0, 0, 0, time.UTC),
+		ParsedOK:   true,
+	}
+	line := logLine{
+		Actor:      "Josh",
+		ActorDate:  "2026-01-19",
+		EventTime:  "2026-01-19 10:00:00",
+		EventType:  "create",
+		IssueID:    "pb-9",
+		IssueTitle: "Pretty Log",
+	}
+	output := formatPrettyLog(entry, line)
+	if !strings.Contains(output, ansiBrightBlue) {
+		t.Fatalf("expected event type color in output: %q", output)
+	}
+	if !strings.Contains(output, ansiCyan) {
+		t.Fatalf("expected issue id color in output: %q", output)
+	}
+	if !strings.Contains(output, ansiBold) {
+		t.Fatalf("expected title color in output: %q", output)
 	}
 }
 
