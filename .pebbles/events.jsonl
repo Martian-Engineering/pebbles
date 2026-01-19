@@ -130,3 +130,9 @@
 {"type":"dep_add","timestamp":"2026-01-19T19:58:12.663844Z","issue_id":"pb-8d7","payload":{"depends_on":"pb-79bb7b8b"}}
 {"type":"dep_add","timestamp":"2026-01-19T19:58:19.711824Z","issue_id":"pb-8d7","payload":{"depends_on":"pb-6666e840"}}
 {"type":"dep_add","timestamp":"2026-01-19T19:58:24.96031Z","issue_id":"pb-8d7","payload":{"depends_on":"pb-220d3ca7"}}
+{"type":"close","timestamp":"2026-01-19T20:27:58.456129Z","issue_id":"pb-975c8c06","payload":{}}
+{"type":"close","timestamp":"2026-01-19T20:28:07.750305Z","issue_id":"pb-cc5b8f92","payload":{}}
+{"type":"close","timestamp":"2026-01-19T20:28:20.649946Z","issue_id":"pb-79bb7b8b","payload":{}}
+{"type":"close","timestamp":"2026-01-19T20:28:28.905488Z","issue_id":"pb-6666e840","payload":{}}
+{"type":"close","timestamp":"2026-01-19T20:28:33.479932Z","issue_id":"pb-220d3ca7","payload":{}}
+{"type":"close","timestamp":"2026-01-19T20:28:39.953272Z","issue_id":"pb-8d7","payload":{}}

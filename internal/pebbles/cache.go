@@ -16,10 +16,17 @@ func EnsureCache(root string) error {
 	if err != nil {
 		return err
 	}
-	if !needs {
-		return nil
+	if needs {
+		return RebuildCache(root)
 	}
-	return RebuildCache(root)
+	schemaNeeds, err := needsSchemaUpdate(DBPath(root))
+	if err != nil {
+		return err
+	}
+	if schemaNeeds {
+		return RebuildCache(root)
+	}
+	return nil
 }
 
 // RebuildCache recreates the SQLite cache from the event log.
@@ -63,6 +70,51 @@ func needsRebuild(eventsPath, dbPath string) (bool, error) {
 		return false, fmt.Errorf("stat cache: %w", err)
 	}
 	return eventsInfo.ModTime().After(dbInfo.ModTime()), nil
+}
+
+// needsSchemaUpdate checks whether the cache schema is missing expected columns.
+func needsSchemaUpdate(dbPath string) (bool, error) {
+	// Open the cache database and inspect the deps table schema.
+	db, err := openDB(dbPath)
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = db.Close() }()
+	hasDepType, err := depsTableHasColumn(db, "dep_type")
+	if err != nil {
+		return false, err
+	}
+	// Trigger a rebuild if the new column is missing.
+	return !hasDepType, nil
+}
+
+// depsTableHasColumn reports whether the deps table contains a column name.
+func depsTableHasColumn(db *sql.DB, name string) (bool, error) {
+	// PRAGMA table_info returns one row per column.
+	rows, err := db.Query("PRAGMA table_info(deps)")
+	if err != nil {
+		return false, fmt.Errorf("deps schema: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	// Scan column metadata looking for the requested name.
+	for rows.Next() {
+		var cid int
+		var colName string
+		var colType string
+		var notnull int
+		var dflt sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &colName, &colType, &notnull, &dflt, &pk); err != nil {
+			return false, fmt.Errorf("scan deps schema: %w", err)
+		}
+		if colName == name {
+			return true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, fmt.Errorf("deps schema rows: %w", err)
+	}
+	return false, nil
 }
 
 // openDB opens a SQLite database at the given path.

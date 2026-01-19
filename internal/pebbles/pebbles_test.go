@@ -116,7 +116,7 @@ func TestRenameUpdatesDeps(t *testing.T) {
 	if err := AppendEvent(root, NewCreateEvent(issueB, "Issue B", "", "task", "2024-01-05T00:00:01Z", 2)); err != nil {
 		t.Fatalf("append create B: %v", err)
 	}
-	if err := AppendEvent(root, NewDepAddEvent(issueA, issueB, "2024-01-05T00:00:02Z")); err != nil {
+	if err := AppendEvent(root, NewDepAddEvent(issueA, issueB, DepTypeBlocks, "2024-01-05T00:00:02Z")); err != nil {
 		t.Fatalf("append dep: %v", err)
 	}
 	if err := AppendEvent(root, NewRenameEvent(issueB, renamedB, "2024-01-05T00:00:03Z")); err != nil {
@@ -140,17 +140,24 @@ func TestReadyList(t *testing.T) {
 	if err := InitProject(root); err != nil {
 		t.Fatalf("init project: %v", err)
 	}
-	// Create two issues with a dependency.
+	// Create issues with blocking and parent-child dependencies.
 	issueA := "pb-issue-a"
 	issueB := "pb-issue-b"
+	issueC := "pb-issue-c"
 	if err := AppendEvent(root, NewCreateEvent(issueA, "Issue A", "", "task", "2024-01-02T00:00:00Z", 2)); err != nil {
 		t.Fatalf("append create A: %v", err)
 	}
 	if err := AppendEvent(root, NewCreateEvent(issueB, "Issue B", "", "task", "2024-01-02T00:00:01Z", 2)); err != nil {
 		t.Fatalf("append create B: %v", err)
 	}
-	if err := AppendEvent(root, NewDepAddEvent(issueA, issueB, "2024-01-02T00:00:02Z")); err != nil {
-		t.Fatalf("append dep: %v", err)
+	if err := AppendEvent(root, NewCreateEvent(issueC, "Issue C", "", "task", "2024-01-02T00:00:02Z", 2)); err != nil {
+		t.Fatalf("append create C: %v", err)
+	}
+	if err := AppendEvent(root, NewDepAddEvent(issueA, issueB, DepTypeBlocks, "2024-01-02T00:00:03Z")); err != nil {
+		t.Fatalf("append blocking dep: %v", err)
+	}
+	if err := AppendEvent(root, NewDepAddEvent(issueC, issueB, DepTypeParentChild, "2024-01-02T00:00:04Z")); err != nil {
+		t.Fatalf("append parent-child dep: %v", err)
 	}
 	if err := RebuildCache(root); err != nil {
 		t.Fatalf("rebuild cache: %v", err)
@@ -159,11 +166,11 @@ func TestReadyList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list ready: %v", err)
 	}
-	if len(ready) != 1 || ready[0].ID != issueB {
-		t.Fatalf("expected only %s ready", issueB)
+	if len(ready) != 2 || ready[0].ID != issueB || ready[1].ID != issueC {
+		t.Fatalf("expected %s and %s ready", issueB, issueC)
 	}
 	// Close the blocker and confirm the dependent becomes ready.
-	if err := AppendEvent(root, NewCloseEvent(issueB, "2024-01-02T00:00:03Z")); err != nil {
+	if err := AppendEvent(root, NewCloseEvent(issueB, "2024-01-02T00:00:05Z")); err != nil {
 		t.Fatalf("append close: %v", err)
 	}
 	if err := RebuildCache(root); err != nil {
@@ -173,8 +180,8 @@ func TestReadyList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list ready after close: %v", err)
 	}
-	if len(ready) != 1 || ready[0].ID != issueA {
-		t.Fatalf("expected only %s ready", issueA)
+	if len(ready) != 2 || ready[0].ID != issueA || ready[1].ID != issueC {
+		t.Fatalf("expected %s and %s ready", issueA, issueC)
 	}
 }
 
@@ -196,10 +203,10 @@ func TestDependencyTree(t *testing.T) {
 	if err := AppendEvent(root, NewCreateEvent(issueC, "Issue C", "", "task", "2024-01-03T00:00:02Z", 2)); err != nil {
 		t.Fatalf("append create C: %v", err)
 	}
-	if err := AppendEvent(root, NewDepAddEvent(issueA, issueB, "2024-01-03T00:00:03Z")); err != nil {
+	if err := AppendEvent(root, NewDepAddEvent(issueA, issueB, DepTypeBlocks, "2024-01-03T00:00:03Z")); err != nil {
 		t.Fatalf("append dep A->B: %v", err)
 	}
-	if err := AppendEvent(root, NewDepAddEvent(issueB, issueC, "2024-01-03T00:00:04Z")); err != nil {
+	if err := AppendEvent(root, NewDepAddEvent(issueB, issueC, DepTypeBlocks, "2024-01-03T00:00:04Z")); err != nil {
 		t.Fatalf("append dep B->C: %v", err)
 	}
 	if err := RebuildCache(root); err != nil {
@@ -217,6 +224,65 @@ func TestDependencyTree(t *testing.T) {
 	}
 	if len(tree.Dependencies[0].Dependencies) != 1 || tree.Dependencies[0].Dependencies[0].Issue.ID != issueC {
 		t.Fatalf("expected grandchild %s", issueC)
+	}
+}
+
+// TestListIssueHierarchy verifies parent-child indentation ordering.
+func TestListIssueHierarchy(t *testing.T) {
+	root := t.TempDir()
+	if err := InitProject(root); err != nil {
+		t.Fatalf("init project: %v", err)
+	}
+	issueParent := "pb-parent"
+	issueChildA := "pb-child-a"
+	issueChildB := "pb-child-b"
+	issueGrand := "pb-grandchild"
+	issueRoot := "pb-root"
+	// Create issues with staggered timestamps for stable ordering.
+	if err := AppendEvent(root, NewCreateEvent(issueParent, "Parent", "", "task", "2024-01-06T00:00:00Z", 2)); err != nil {
+		t.Fatalf("append parent: %v", err)
+	}
+	if err := AppendEvent(root, NewCreateEvent(issueChildA, "Child A", "", "task", "2024-01-06T00:00:01Z", 2)); err != nil {
+		t.Fatalf("append child A: %v", err)
+	}
+	if err := AppendEvent(root, NewCreateEvent(issueChildB, "Child B", "", "task", "2024-01-06T00:00:02Z", 2)); err != nil {
+		t.Fatalf("append child B: %v", err)
+	}
+	if err := AppendEvent(root, NewCreateEvent(issueGrand, "Grandchild", "", "task", "2024-01-06T00:00:03Z", 2)); err != nil {
+		t.Fatalf("append grandchild: %v", err)
+	}
+	if err := AppendEvent(root, NewCreateEvent(issueRoot, "Root", "", "task", "2024-01-06T00:00:04Z", 2)); err != nil {
+		t.Fatalf("append root: %v", err)
+	}
+	// Connect the parent-child hierarchy.
+	if err := AppendEvent(root, NewDepAddEvent(issueChildA, issueParent, DepTypeParentChild, "2024-01-06T00:00:05Z")); err != nil {
+		t.Fatalf("append child A parent: %v", err)
+	}
+	if err := AppendEvent(root, NewDepAddEvent(issueChildB, issueParent, DepTypeParentChild, "2024-01-06T00:00:06Z")); err != nil {
+		t.Fatalf("append child B parent: %v", err)
+	}
+	if err := AppendEvent(root, NewDepAddEvent(issueGrand, issueChildA, DepTypeParentChild, "2024-01-06T00:00:07Z")); err != nil {
+		t.Fatalf("append grandchild parent: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache: %v", err)
+	}
+	items, err := ListIssueHierarchy(root)
+	if err != nil {
+		t.Fatalf("list issue hierarchy: %v", err)
+	}
+	wantIDs := []string{issueParent, issueChildA, issueGrand, issueChildB, issueRoot}
+	wantDepths := []int{0, 1, 2, 1, 0}
+	if len(items) != len(wantIDs) {
+		t.Fatalf("expected %d items, got %d", len(wantIDs), len(items))
+	}
+	for i, item := range items {
+		if item.Issue.ID != wantIDs[i] {
+			t.Fatalf("expected %s at %d, got %s", wantIDs[i], i, item.Issue.ID)
+		}
+		if item.Depth != wantDepths[i] {
+			t.Fatalf("expected depth %d at %d, got %d", wantDepths[i], i, item.Depth)
+		}
 	}
 }
 

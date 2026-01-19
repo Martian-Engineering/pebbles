@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	payloadKeyOrder        = []string{"title", "description", "type", "priority", "status", "depends_on"}
+	payloadKeyOrder        = []string{"title", "description", "type", "priority", "status", "depends_on", "dep_type"}
 	defaultLogColumnWidths = logColumnWidths{
 		Actor:      16,
 		ActorDate:  10,
@@ -153,20 +153,20 @@ func runLog(root string, args []string) {
 	// JSON output is streamed directly to stdout (no pager).
 	if *jsonOut {
 		for _, entry := range filtered {
-		attribution := attributionForLine(attributions, entry.Entry.Line)
-		event := enrichEvent(entry.Entry.Event, descriptions)
-		line := logLine{
-			Actor:      attribution.Author,
-			ActorDate:  attribution.Date,
-			EventTime:  formatEventTime(entry),
-			EventType:  logEventLabel(event),
-			IssueID:    event.IssueID,
-			IssueTitle: titleForIssue(titles, event.IssueID),
-			Details:    logEventDetails(event),
-		}
-		if err := printLogJSON(entry, line); err != nil {
-			exitError(err)
-		}
+			attribution := attributionForLine(attributions, entry.Entry.Line)
+			event := enrichEvent(entry.Entry.Event, descriptions)
+			line := logLine{
+				Actor:      attribution.Author,
+				ActorDate:  attribution.Date,
+				EventTime:  formatEventTime(entry),
+				EventType:  logEventLabel(event),
+				IssueID:    event.IssueID,
+				IssueTitle: titleForIssue(titles, event.IssueID),
+				Details:    logEventDetails(event),
+			}
+			if err := printLogJSON(entry, line); err != nil {
+				exitError(err)
+			}
 		}
 		return
 	}
@@ -347,9 +347,17 @@ func logEventDetails(event pebbles.Event) string {
 			return fmt.Sprintf("description=%s", formatPayloadValue("description", description))
 		}
 	case pebbles.EventTypeDepAdd, pebbles.EventTypeDepRemove:
+		parts := make([]string, 0, 2)
 		if dependsOn := event.Payload["depends_on"]; dependsOn != "" {
-			return fmt.Sprintf("depends_on=%s", dependsOn)
+			parts = append(parts, fmt.Sprintf("depends_on=%s", dependsOn))
 		}
+		if depType := strings.TrimSpace(event.Payload["dep_type"]); depType != "" {
+			normalized := pebbles.NormalizeDepType(depType)
+			if normalized != pebbles.DepTypeBlocks {
+				parts = append(parts, fmt.Sprintf("dep_type=%s", normalized))
+			}
+		}
+		return strings.Join(parts, " ")
 	default:
 		return formatPayloadPairs(event.Payload)
 	}
@@ -381,9 +389,17 @@ func logEventDetailLines(event pebbles.Event) []string {
 			return []string{fmt.Sprintf("description=%s", formatPayloadValue("description", description))}
 		}
 	case pebbles.EventTypeDepAdd, pebbles.EventTypeDepRemove:
+		var lines []string
 		if dependsOn := event.Payload["depends_on"]; dependsOn != "" {
-			return []string{fmt.Sprintf("depends_on=%s", dependsOn)}
+			lines = append(lines, fmt.Sprintf("depends_on=%s", dependsOn))
 		}
+		if depType := strings.TrimSpace(event.Payload["dep_type"]); depType != "" {
+			normalized := pebbles.NormalizeDepType(depType)
+			if normalized != pebbles.DepTypeBlocks {
+				lines = append(lines, fmt.Sprintf("dep_type=%s", normalized))
+			}
+		}
+		return lines
 	default:
 		return formatPayloadLines(event.Payload)
 	}

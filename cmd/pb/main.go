@@ -122,12 +122,12 @@ func runList(root string, args []string) {
 	if err := ensureProject(root); err != nil {
 		exitError(err)
 	}
-	issues, err := pebbles.ListIssues(root)
+	issues, err := pebbles.ListIssueHierarchy(root)
 	if err != nil {
 		exitError(err)
 	}
-	for _, issue := range issues {
-		fmt.Println(formatIssueLine(issue))
+	for _, item := range issues {
+		fmt.Println(formatIssueLine(item.Issue, item.Depth))
 	}
 }
 
@@ -212,40 +212,44 @@ func runClose(root string, args []string) {
 
 // runDep handles pb dep commands.
 func runDep(root string, args []string) {
-	fs := flag.NewFlagSet("dep", flag.ExitOnError)
-	_ = fs.Parse(args)
 	// Validate CLI arguments for dependency creation.
 	if err := ensureProject(root); err != nil {
 		exitError(err)
 	}
-	if fs.NArg() < 1 {
+	if len(args) < 1 {
 		exitError(fmt.Errorf("usage: pb dep <add|rm|tree> [args]"))
 	}
 	// Route subcommands for dependency operations.
-	action := fs.Arg(0)
+	action := args[0]
 	switch action {
 	case "add":
-		if fs.NArg() != 3 {
-			exitError(fmt.Errorf("usage: pb dep add <issue> <depends-on>"))
+		addFlags := flag.NewFlagSet("dep add", flag.ExitOnError)
+		depType := addFlags.String("type", pebbles.DepTypeBlocks, "Dependency type (blocks or parent-child)")
+		_ = addFlags.Parse(args[1:])
+		if addFlags.NArg() != 2 {
+			exitError(fmt.Errorf("usage: pb dep add [--type <type>] <issue> <depends-on>"))
 		}
-		runDepAdd(root, fs.Arg(1), fs.Arg(2))
+		runDepAdd(root, addFlags.Arg(0), addFlags.Arg(1), pebbles.NormalizeDepType(*depType))
 	case "rm":
-		if fs.NArg() != 3 {
-			exitError(fmt.Errorf("usage: pb dep rm <issue> <depends-on>"))
+		rmFlags := flag.NewFlagSet("dep rm", flag.ExitOnError)
+		depType := rmFlags.String("type", pebbles.DepTypeBlocks, "Dependency type (blocks or parent-child)")
+		_ = rmFlags.Parse(args[1:])
+		if rmFlags.NArg() != 2 {
+			exitError(fmt.Errorf("usage: pb dep rm [--type <type>] <issue> <depends-on>"))
 		}
-		runDepRemove(root, fs.Arg(1), fs.Arg(2))
+		runDepRemove(root, rmFlags.Arg(0), rmFlags.Arg(1), pebbles.NormalizeDepType(*depType))
 	case "tree":
-		if fs.NArg() != 2 {
+		if len(args) != 2 {
 			exitError(fmt.Errorf("usage: pb dep tree <issue>"))
 		}
-		runDepTree(root, fs.Arg(1))
+		runDepTree(root, args[1])
 	default:
 		exitError(fmt.Errorf("usage: pb dep <add|rm|tree> [args]"))
 	}
 }
 
 // runDepAdd appends a dependency add event.
-func runDepAdd(root, issueID, dependsOn string) {
+func runDepAdd(root, issueID, dependsOn, depType string) {
 	// Ensure both sides exist before appending the event.
 	if _, _, err := pebbles.GetIssue(root, issueID); err != nil {
 		exitError(err)
@@ -253,7 +257,7 @@ func runDepAdd(root, issueID, dependsOn string) {
 	if _, _, err := pebbles.GetIssue(root, dependsOn); err != nil {
 		exitError(err)
 	}
-	event := pebbles.NewDepAddEvent(issueID, dependsOn, pebbles.NowTimestamp())
+	event := pebbles.NewDepAddEvent(issueID, dependsOn, depType, pebbles.NowTimestamp())
 	// Append the event and rebuild the cache.
 	if err := pebbles.AppendEvent(root, event); err != nil {
 		exitError(err)
@@ -264,7 +268,7 @@ func runDepAdd(root, issueID, dependsOn string) {
 }
 
 // runDepRemove appends a dependency removal event.
-func runDepRemove(root, issueID, dependsOn string) {
+func runDepRemove(root, issueID, dependsOn, depType string) {
 	// Ensure both sides exist before appending the event.
 	if _, _, err := pebbles.GetIssue(root, issueID); err != nil {
 		exitError(err)
@@ -272,7 +276,7 @@ func runDepRemove(root, issueID, dependsOn string) {
 	if _, _, err := pebbles.GetIssue(root, dependsOn); err != nil {
 		exitError(err)
 	}
-	event := pebbles.NewDepRemoveEvent(issueID, dependsOn, pebbles.NowTimestamp())
+	event := pebbles.NewDepRemoveEvent(issueID, dependsOn, depType, pebbles.NowTimestamp())
 	// Append the event and rebuild the cache.
 	if err := pebbles.AppendEvent(root, event); err != nil {
 		exitError(err)
@@ -303,7 +307,7 @@ func runReady(root string, args []string) {
 		exitError(err)
 	}
 	for _, issue := range issues {
-		fmt.Println(formatIssueLine(issue))
+		fmt.Println(formatIssueLine(issue, 0))
 	}
 }
 
@@ -448,6 +452,7 @@ func runRenamePrefix(root string, args []string) {
 	}
 	fmt.Printf("Renamed %d issues to %s\n", len(events), newPrefix)
 }
+
 // ensureProject checks that the .pebbles directory exists.
 func ensureProject(root string) error {
 	if _, err := os.Stat(pebbles.EventsPath(root)); err != nil {
@@ -517,8 +522,8 @@ func printUsage() {
 	fmt.Println("  log         Show the event log (pretty view)")
 	fmt.Println("")
 	fmt.Println("Dependencies:")
-	fmt.Println("  dep add     Add a dependency")
-	fmt.Println("  dep rm      Remove a dependency")
+	fmt.Println("  dep add     Add a dependency (--type blocks|parent-child)")
+	fmt.Println("  dep rm      Remove a dependency (--type blocks|parent-child)")
 	fmt.Println("  dep tree    Show dependency tree")
 	fmt.Println("")
 	fmt.Println("Prefixes:")
@@ -536,9 +541,11 @@ func exitError(err error) {
 }
 
 // formatIssueLine returns a formatted list output for an issue.
-func formatIssueLine(issue pebbles.Issue) string {
+func formatIssueLine(issue pebbles.Issue, depth int) string {
+	indent := strings.Repeat("  ", depth)
 	return fmt.Sprintf(
-		"%s %s [● %s] [%s] - %s",
+		"%s%s %s [● %s] [%s] - %s",
+		indent,
 		pebbles.StatusIcon(issue.Status),
 		issue.ID,
 		pebbles.PriorityLabel(issue.Priority),

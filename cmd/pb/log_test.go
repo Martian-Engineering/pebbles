@@ -59,6 +59,16 @@ func TestLogEventDetails(t *testing.T) {
 	if got := logEventDetails(depRm); got != "depends_on=pb-2" {
 		t.Fatalf("dep_rm details mismatch: %q", got)
 	}
+	depParent := pebbles.Event{
+		Type: pebbles.EventTypeDepAdd,
+		Payload: map[string]string{
+			"depends_on": "pb-3",
+			"dep_type":   pebbles.DepTypeParentChild,
+		},
+	}
+	if got := logEventDetails(depParent); got != "depends_on=pb-3 dep_type=parent-child" {
+		t.Fatalf("dep_add parent details mismatch: %q", got)
+	}
 	closeEvent := pebbles.Event{Type: pebbles.EventTypeClose, Payload: map[string]string{"description": "Done"}}
 	if got := logEventDetails(closeEvent); got != "description=Done" {
 		t.Fatalf("close details mismatch: %q", got)

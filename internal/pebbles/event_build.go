@@ -31,13 +31,19 @@ func NewRenameEvent(issueID, newIssueID, timestamp string) Event {
 }
 
 // NewDepAddEvent builds a dependency add event.
-func NewDepAddEvent(issueID, dependsOn, timestamp string) Event {
-	payload := map[string]string{"depends_on": dependsOn}
+func NewDepAddEvent(issueID, dependsOn, depType, timestamp string) Event {
+	payload := map[string]string{
+		"depends_on": dependsOn,
+		"dep_type":   NormalizeDepType(depType),
+	}
 	return Event{Type: EventTypeDepAdd, Timestamp: timestamp, IssueID: issueID, Payload: payload}
 }
 
 // NewDepRemoveEvent builds a dependency removal event.
-func NewDepRemoveEvent(issueID, dependsOn, timestamp string) Event {
-	payload := map[string]string{"depends_on": dependsOn}
+func NewDepRemoveEvent(issueID, dependsOn, depType, timestamp string) Event {
+	payload := map[string]string{
+		"depends_on": dependsOn,
+		"dep_type":   NormalizeDepType(depType),
+	}
 	return Event{Type: EventTypeDepRemove, Timestamp: timestamp, IssueID: issueID, Payload: payload}
 }

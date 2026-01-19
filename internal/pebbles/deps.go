@@ -66,7 +66,7 @@ func buildDepTree(db *sql.DB, id string, visited map[string]bool) (DepNode, erro
 	}
 	visited[id] = true
 	// Recursively append child dependencies.
-	deps, err := getDeps(db, id)
+	deps, err := getDeps(db, id, DepTypeBlocks)
 	if err != nil {
 		return DepNode{}, err
 	}

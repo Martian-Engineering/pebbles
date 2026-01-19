@@ -1,5 +1,7 @@
 package pebbles
 
+import "strings"
+
 // Event represents an append-only change in the Pebbles log.
 type Event struct {
 	Type      string            `json:"type"`
@@ -19,6 +21,12 @@ type Issue struct {
 	CreatedAt   string
 	UpdatedAt   string
 	ClosedAt    string
+}
+
+// IssueHierarchyItem represents an issue with its indentation depth.
+type IssueHierarchyItem struct {
+	Issue Issue
+	Depth int
 }
 
 // Config stores per-project Pebbles settings.
@@ -42,6 +50,13 @@ const (
 )
 
 const (
+	// DepTypeBlocks indicates a blocking dependency.
+	DepTypeBlocks = "blocks"
+	// DepTypeParentChild indicates a parent-child relationship.
+	DepTypeParentChild = "parent-child"
+)
+
+const (
 	// StatusOpen indicates an open issue.
 	StatusOpen = "open"
 	// StatusInProgress indicates an in-progress issue.
@@ -49,3 +64,12 @@ const (
 	// StatusClosed indicates a closed issue.
 	StatusClosed = "closed"
 )
+
+// NormalizeDepType returns a normalized dependency type with a default.
+func NormalizeDepType(depType string) string {
+	trimmed := strings.TrimSpace(depType)
+	if trimmed == "" {
+		return DepTypeBlocks
+	}
+	return trimmed
+}
