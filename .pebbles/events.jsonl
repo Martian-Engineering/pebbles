@@ -197,3 +197,4 @@
 {"type":"create","timestamp":"2026-01-19T22:44:37.159306Z","issue_id":"pb-e1a","payload":{"description":"Add brief comment lines above each install command in the README install section.","priority":"3","title":"Add comments to README install block","type":"task"}}
 {"type":"status_update","timestamp":"2026-01-19T22:44:43.370448Z","issue_id":"pb-e1a","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-19T22:45:00.397334Z","issue_id":"pb-e1a","payload":{}}
+{"type":"create","timestamp":"2026-01-19T22:45:47.524633Z","issue_id":"pb-3ee","payload":{"description":"Add ANSI color support for pb log pretty output (respect NO_COLOR/PB_NO_COLOR). Consider styling event headers and key fields.","priority":"2","title":"Add colored output for pb log","type":"feature"}}
