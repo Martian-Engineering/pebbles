@@ -3,6 +3,7 @@ package pebbles
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // InitProject initializes the .pebbles directory and cache.
@@ -14,6 +15,9 @@ func InitProject(root string) error {
 		return err
 	}
 	if err := ensureEventsFile(root); err != nil {
+		return err
+	}
+	if err := ensureGitignore(root); err != nil {
 		return err
 	}
 	if err := EnsureCache(root); err != nil {
@@ -43,4 +47,17 @@ func ensureEventsFile(root string) error {
 		return fmt.Errorf("create events log: %w", err)
 	}
 	return file.Close()
+}
+
+// ensureGitignore writes a .pebbles/.gitignore if one does not exist.
+func ensureGitignore(root string) error {
+	path := filepath.Join(PebblesDir(root), ".gitignore")
+	if _, err := os.Stat(path); err == nil {
+		return nil
+	}
+	content := []byte("pebbles.db\n")
+	if err := os.WriteFile(path, content, 0600); err != nil {
+		return fmt.Errorf("create .pebbles/.gitignore: %w", err)
+	}
+	return nil
 }

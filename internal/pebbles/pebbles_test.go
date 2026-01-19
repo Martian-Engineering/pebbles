@@ -114,7 +114,12 @@ func TestInitCreatesFiles(t *testing.T) {
 		t.Fatalf("init project: %v", err)
 	}
 	// Verify config and event log are created.
-	paths := []string{ConfigPath(root), EventsPath(root), DBPath(root)}
+	paths := []string{
+		ConfigPath(root),
+		EventsPath(root),
+		DBPath(root),
+		filepath.Join(PebblesDir(root), ".gitignore"),
+	}
 	for _, path := range paths {
 		if _, err := fileExists(path); err != nil {
 			t.Fatalf("expected file %s: %v", filepath.Base(path), err)

@@ -1,0 +1,9 @@
+{"type":"create","timestamp":"2026-01-19T15:57:06.603135Z","issue_id":"pebbles-2d76e51c","payload":{"title":"Test issue","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T15:58:38.717751Z","issue_id":"pebbles-bf887cf2","payload":{"title":"Add .pebbles/.gitignore for cache DB","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T15:58:43.228154Z","issue_id":"pebbles-c794f359","payload":{"title":"Improve pb list output formatting","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T15:59:21.241724Z","issue_id":"pebbles-4db13888","payload":{"title":"Fix flag parsing for update/close/dep","type":"bug"}}
+{"type":"status_update","timestamp":"2026-01-19T15:59:28.790302Z","issue_id":"pebbles-4db13888","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T16:00:22.430019Z","issue_id":"pebbles-4db13888","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T16:01:24.28813Z","issue_id":"pebbles-bf887cf2","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T16:01:33.587699Z","issue_id":"pebbles-bf887cf2","payload":{}}
+{"type":"close","timestamp":"2026-01-19T16:01:43.090285Z","issue_id":"pebbles-4db13888","payload":{}}

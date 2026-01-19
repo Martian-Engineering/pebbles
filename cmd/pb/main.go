@@ -126,6 +126,10 @@ func runShow(root string, args []string) {
 func runUpdate(root string, args []string) {
 	fs := flag.NewFlagSet("update", flag.ExitOnError)
 	status := fs.String("status", "", "New status")
+	// Support `pb update <id> --status ...` by moving the id to the end.
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		args = append(args[1:], args[0])
+	}
 	_ = fs.Parse(args)
 	// Validate inputs before writing an update event.
 	if err := ensureProject(root); err != nil {
