@@ -191,3 +191,5 @@
 {"type":"close","timestamp":"2026-01-19T22:18:56.117969Z","issue_id":"pb-364","payload":{}}
 {"type":"status_update","timestamp":"2026-01-19T22:21:16.637463Z","issue_id":"pb-8e9","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-19T22:21:39.061807Z","issue_id":"pb-8e9","payload":{}}
+{"type":"create","timestamp":"2026-01-19T22:31:56.992913Z","issue_id":"pb-09e","payload":{"description":"Align with beads install flow so docs use: curl -fsSL .../install.sh | bash. Decide if script should be bash-specific or keep POSIX sh but recommend bash.","priority":"2","title":"Switch installer to bash-style invocation","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T22:32:03.817205Z","issue_id":"pb-c95","payload":{"description":"Design a tool/command to initialize Pebbles from an existing Beads project (import issues, deps, statuses, comments, priorities). Define mapping, handling of prefixes/ids, and migration flow.","priority":"1","title":"Spec beads-to-pebbles initializer","type":"feature"}}
