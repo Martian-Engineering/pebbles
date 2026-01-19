@@ -63,8 +63,19 @@ func main() {
 // runInit handles pb init.
 func runInit(root string, args []string) {
 	fs := flag.NewFlagSet("init", flag.ExitOnError)
+	prefix := fs.String("prefix", "", "Prefix for new issue IDs")
 	_ = fs.Parse(args)
-	if err := pebbles.InitProject(root); err != nil {
+	prefixSet := false
+	fs.Visit(func(flag *flag.Flag) {
+		if flag.Name == "prefix" {
+			prefixSet = true
+		}
+	})
+	trimmed := strings.TrimSpace(*prefix)
+	if prefixSet && trimmed == "" {
+		exitError(fmt.Errorf("prefix is required"))
+	}
+	if err := pebbles.InitProjectWithPrefix(root, trimmed); err != nil {
 		exitError(err)
 	}
 	fmt.Println("Initialized .pebbles")
@@ -622,6 +633,7 @@ func printUsage() {
 	fmt.Println("")
 	fmt.Println("Setup:")
 	fmt.Println("  init        Initialize a pebbles project")
+	fmt.Println("  init --prefix <prefix> Initialize with a custom prefix")
 	fmt.Println("  help        Show this help")
 	fmt.Println("")
 	fmt.Println("Styling:")

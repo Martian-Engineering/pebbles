@@ -21,6 +21,9 @@ go build -o pb ./cmd/pb
 # Initialize a project
 pb init
 
+# Initialize with a custom prefix for new issue IDs
+pb init --prefix peb
+
 # Create an issue
 pb create --title="Add login" --type=task --priority=P2 --description="Track login work"
 

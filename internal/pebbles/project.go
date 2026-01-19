@@ -4,14 +4,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // InitProject initializes the .pebbles directory and cache.
 func InitProject(root string) error {
+	return InitProjectWithPrefix(root, "")
+}
+
+// InitProjectWithPrefix initializes the .pebbles directory and cache with a custom prefix.
+func InitProjectWithPrefix(root, prefix string) error {
 	if err := os.MkdirAll(PebblesDir(root), 0755); err != nil {
 		return fmt.Errorf("create .pebbles dir: %w", err)
 	}
-	if err := ensureConfig(root); err != nil {
+	if err := ensureConfig(root, prefix); err != nil {
 		return err
 	}
 	if err := ensureEventsFile(root); err != nil {
@@ -27,12 +33,16 @@ func InitProject(root string) error {
 }
 
 // ensureConfig writes a config file if one does not exist.
-func ensureConfig(root string) error {
+func ensureConfig(root, prefix string) error {
 	path := ConfigPath(root)
 	if _, err := os.Stat(path); err == nil {
 		return nil
 	}
-	cfg := Config{Prefix: DefaultPrefix(root)}
+	trimmed := strings.TrimSpace(prefix)
+	if trimmed == "" {
+		trimmed = DefaultPrefix(root)
+	}
+	cfg := Config{Prefix: trimmed}
 	return WriteConfig(root, cfg)
 }
 
