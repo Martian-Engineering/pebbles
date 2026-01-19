@@ -464,17 +464,20 @@ func ensureProject(root string) error {
 // printIssue renders a single issue to stdout.
 func printIssue(root string, issue pebbles.Issue, deps []string) {
 	// Header includes the status icon and priority badge.
+	statusIcon := renderStatusIcon(issue.Status)
+	priorityLabel := renderPriorityLabel(issue.Priority)
+	statusLabel := renderStatusLabel(issue.Status)
 	header := fmt.Sprintf(
 		"%s %s · %s   [● %s · %s]",
-		pebbles.StatusIcon(issue.Status),
+		statusIcon,
 		issue.ID,
 		issue.Title,
-		pebbles.PriorityLabel(issue.Priority),
-		pebbles.StatusLabel(issue.Status),
+		priorityLabel,
+		statusLabel,
 	)
 	fmt.Println(header)
 	// Core metadata block.
-	fmt.Printf("Type: %s\n", issue.IssueType)
+	fmt.Printf("Type: %s\n", renderIssueType(issue.IssueType))
 	fmt.Printf(
 		"Created: %s · Updated: %s\n\n",
 		formatDate(issue.CreatedAt),
@@ -485,7 +488,7 @@ func printIssue(root string, issue pebbles.Issue, deps []string) {
 	if strings.TrimSpace(issue.Description) == "" {
 		fmt.Println("(none)")
 	} else {
-		fmt.Println(issue.Description)
+		fmt.Println(renderMarkdown(issue.Description))
 	}
 	// Dependency list with status per dependency.
 	fmt.Println("\nDEPENDENCIES")
@@ -499,7 +502,7 @@ func printIssue(root string, issue pebbles.Issue, deps []string) {
 			fmt.Printf("  → %s (unknown)\n", dep)
 			continue
 		}
-		fmt.Printf("  → %s (%s)\n", dep, status)
+		fmt.Printf("  → %s (%s)\n", dep, renderStatusValue(status))
 	}
 }
 
@@ -532,6 +535,10 @@ func printUsage() {
 	fmt.Println("Setup:")
 	fmt.Println("  init        Initialize a pebbles project")
 	fmt.Println("  help        Show this help")
+	fmt.Println("")
+	fmt.Println("Styling:")
+	fmt.Println("  list/show output uses ANSI colors when stdout is a TTY.")
+	fmt.Println("  Set NO_COLOR=1 or PB_NO_COLOR=1 to disable.")
 }
 
 // exitError prints an error to stderr and exits.
@@ -543,13 +550,16 @@ func exitError(err error) {
 // formatIssueLine returns a formatted list output for an issue.
 func formatIssueLine(issue pebbles.Issue, depth int) string {
 	indent := strings.Repeat("  ", depth)
+	statusIcon := renderStatusIcon(issue.Status)
+	priorityLabel := renderPriorityLabel(issue.Priority)
+	issueType := renderIssueType(issue.IssueType)
 	return fmt.Sprintf(
 		"%s%s %s [● %s] [%s] - %s",
 		indent,
-		pebbles.StatusIcon(issue.Status),
+		statusIcon,
 		issue.ID,
-		pebbles.PriorityLabel(issue.Priority),
-		issue.IssueType,
+		priorityLabel,
+		issueType,
 		issue.Title,
 	)
 }

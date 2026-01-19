@@ -147,3 +147,6 @@
 {"type":"create","timestamp":"2026-01-19T20:56:14.234437Z","issue_id":"pb-12c","payload":{"description":"Normalize subcommand args so flags can appear after positional arguments (e.g. dep add \u003cissue\u003e \u003cdep\u003e --type parent-child, rename-prefix pb --full).","priority":"2","title":"Allow flags after positional args","type":"feature"}}
 {"type":"status_update","timestamp":"2026-01-19T20:57:25.705401Z","issue_id":"pb-12c","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-19T20:58:45.076634Z","issue_id":"pb-12c","payload":{}}
+{"type":"close","timestamp":"2026-01-19T21:21:01.468177Z","issue_id":"pb-18d","payload":{}}
+{"type":"status_update","timestamp":"2026-01-19T20:56:19.608713Z","issue_id":"pb-18d","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T21:07:18.935032Z","issue_id":"pb-18d","payload":{}}

@@ -66,6 +66,11 @@ pb log --limit 20
 pb log --table --limit 20
 ```
 
+## Styling
+
+`pb list` and `pb show` use ANSI colors when stdout is a TTY. Set `NO_COLOR=1`
+or `PB_NO_COLOR=1` to disable.
+
 ## Log Output
 
 `pb log` prints a multi-line, human-friendly block per event (newest-first by
