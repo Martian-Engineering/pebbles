@@ -78,6 +78,12 @@ func applyEvent(db *sql.DB, event Event) error {
 			return err
 		}
 		return applyStatus(db, resolved)
+	case EventTypeUpdate:
+		resolved, err := resolveEventIssueID(db, event)
+		if err != nil {
+			return err
+		}
+		return applyUpdate(db, resolved)
 	case EventTypeClose:
 		resolved, err := resolveEventIssueID(db, event)
 		if err != nil {
@@ -230,6 +236,35 @@ func applyStatus(db *sql.DB, event Event) error {
 		return fmt.Errorf("update status: %w", err)
 	}
 	return requireRow(result, "status update for missing issue")
+}
+
+// applyUpdate updates issue fields from an update event.
+func applyUpdate(db *sql.DB, event Event) error {
+	var updates []string
+	var args []any
+	if issueType, ok := event.Payload["type"]; ok {
+		updates = append(updates, "issue_type = ?")
+		args = append(args, issueType)
+	}
+	if description, ok := event.Payload["description"]; ok {
+		updates = append(updates, "description = ?")
+		args = append(args, description)
+	}
+	if priority, ok := event.Payload["priority"]; ok {
+		updates = append(updates, "priority = ?")
+		args = append(args, parsePriority(priority))
+	}
+	if len(updates) == 0 {
+		return fmt.Errorf("update event missing fields")
+	}
+	updates = append(updates, "updated_at = ?")
+	args = append(args, event.Timestamp, event.IssueID)
+	query := fmt.Sprintf("UPDATE issues SET %s WHERE id = ?", strings.Join(updates, ", "))
+	result, err := db.Exec(query, args...)
+	if err != nil {
+		return fmt.Errorf("update issue: %w", err)
+	}
+	return requireRow(result, "update for missing issue")
 }
 
 // applyClose closes an issue from a close event.

@@ -180,10 +180,37 @@ func runShow(root string, args []string) {
 	printIssue(root, issue, deps, comments)
 }
 
+// optionalString tracks whether a string flag was explicitly set.
+type optionalString struct {
+	value string
+	set   bool
+}
+
+// String returns the current value for flag usage output.
+func (opt *optionalString) String() string {
+	if opt == nil {
+		return ""
+	}
+	return opt.value
+}
+
+// Set records a flag value and marks it as set.
+func (opt *optionalString) Set(value string) error {
+	opt.value = value
+	opt.set = true
+	return nil
+}
+
 // runUpdate handles pb update.
 func runUpdate(root string, args []string) {
 	fs := flag.NewFlagSet("update", flag.ExitOnError)
 	status := fs.String("status", "", "New status")
+	var issueType optionalString
+	var description optionalString
+	var priority optionalString
+	fs.Var(&issueType, "type", "New issue type")
+	fs.Var(&description, "description", "New description")
+	fs.Var(&priority, "priority", "New priority (P0-P4)")
 	// Support `pb update <id> --status ...` by moving the id to the end.
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		args = append(args[1:], args[0])
@@ -196,18 +223,47 @@ func runUpdate(root string, args []string) {
 	if fs.NArg() != 1 {
 		exitError(fmt.Errorf("update requires issue id"))
 	}
-	if strings.TrimSpace(*status) == "" {
-		exitError(fmt.Errorf("status is required"))
+	if strings.TrimSpace(*status) == "" && !issueType.set && !description.set && !priority.set {
+		exitError(fmt.Errorf("at least one field is required"))
+	}
+	if issueType.set && strings.TrimSpace(issueType.value) == "" {
+		exitError(fmt.Errorf("type cannot be empty"))
+	}
+	if priority.set && strings.TrimSpace(priority.value) == "" {
+		exitError(fmt.Errorf("priority cannot be empty"))
 	}
 	id := fs.Arg(0)
 	// Confirm the issue exists in the cache.
 	if _, _, err := pebbles.GetIssue(root, id); err != nil {
 		exitError(err)
 	}
-	event := pebbles.NewStatusEvent(id, *status, pebbles.NowTimestamp())
-	// Append the event and rebuild the cache for consistency.
-	if err := pebbles.AppendEvent(root, event); err != nil {
-		exitError(err)
+	timestamp := pebbles.NowTimestamp()
+	if strings.TrimSpace(*status) != "" {
+		event := pebbles.NewStatusEvent(id, *status, timestamp)
+		// Append the event and rebuild the cache for consistency.
+		if err := pebbles.AppendEvent(root, event); err != nil {
+			exitError(err)
+		}
+	}
+	updatePayload := make(map[string]string)
+	if issueType.set {
+		updatePayload["type"] = issueType.value
+	}
+	if description.set {
+		updatePayload["description"] = description.value
+	}
+	if priority.set {
+		parsed, err := pebbles.ParsePriority(priority.value)
+		if err != nil {
+			exitError(err)
+		}
+		updatePayload["priority"] = fmt.Sprintf("%d", parsed)
+	}
+	if len(updatePayload) > 0 {
+		event := pebbles.NewUpdateEvent(id, timestamp, updatePayload)
+		if err := pebbles.AppendEvent(root, event); err != nil {
+			exitError(err)
+		}
 	}
 	if err := pebbles.RebuildCache(root); err != nil {
 		exitError(err)

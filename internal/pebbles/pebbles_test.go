@@ -36,6 +36,32 @@ func TestCreateUpdateClose(t *testing.T) {
 	if issues[0].Priority != 2 {
 		t.Fatalf("expected priority 2, got %d", issues[0].Priority)
 	}
+	var issue Issue
+	// Update issue fields and verify they persist.
+	updatePayload := map[string]string{
+		"type":        "bug",
+		"priority":    "1",
+		"description": "New description",
+	}
+	if err := AppendEvent(root, NewUpdateEvent(issueID, "2024-01-01T00:30:00Z", updatePayload)); err != nil {
+		t.Fatalf("append update: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache after update: %v", err)
+	}
+	issue, _, err = GetIssue(root, issueID)
+	if err != nil {
+		t.Fatalf("get issue after update: %v", err)
+	}
+	if issue.IssueType != "bug" {
+		t.Fatalf("expected type bug, got %s", issue.IssueType)
+	}
+	if issue.Priority != 1 {
+		t.Fatalf("expected priority 1, got %d", issue.Priority)
+	}
+	if issue.Description != "New description" {
+		t.Fatalf("expected updated description")
+	}
 	// Update status and verify.
 	if err := AppendEvent(root, NewStatusEvent(issueID, "in_progress", "2024-01-01T01:00:00Z")); err != nil {
 		t.Fatalf("append status: %v", err)
@@ -43,7 +69,7 @@ func TestCreateUpdateClose(t *testing.T) {
 	if err := RebuildCache(root); err != nil {
 		t.Fatalf("rebuild cache: %v", err)
 	}
-	issue, _, err := GetIssue(root, issueID)
+	issue, _, err = GetIssue(root, issueID)
 	if err != nil {
 		t.Fatalf("get issue: %v", err)
 	}

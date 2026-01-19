@@ -46,6 +46,8 @@ const (
 	EventTypeCreate = "create"
 	// EventTypeStatus indicates a status update event.
 	EventTypeStatus = "status_update"
+	// EventTypeUpdate indicates an update to issue fields.
+	EventTypeUpdate = "update"
 	// EventTypeClose indicates a close event.
 	EventTypeClose = "close"
 	// EventTypeComment indicates a comment event.

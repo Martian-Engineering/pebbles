@@ -309,6 +309,8 @@ func logEventLabel(event pebbles.Event) string {
 		return "create"
 	case pebbles.EventTypeStatus:
 		return "status"
+	case pebbles.EventTypeUpdate:
+		return "update"
 	case pebbles.EventTypeClose:
 		return "close"
 	case pebbles.EventTypeComment:
@@ -344,6 +346,18 @@ func logEventDetails(event pebbles.Event) string {
 		if status := event.Payload["status"]; status != "" {
 			return fmt.Sprintf("status=%s", status)
 		}
+	case pebbles.EventTypeUpdate:
+		parts := make([]string, 0, 3)
+		if issueType := event.Payload["type"]; issueType != "" {
+			parts = append(parts, fmt.Sprintf("type=%s", issueType))
+		}
+		if priority := event.Payload["priority"]; priority != "" {
+			parts = append(parts, fmt.Sprintf("priority=%s", formatPriority(priority)))
+		}
+		if description := event.Payload["description"]; description != "" {
+			parts = append(parts, fmt.Sprintf("description=%s", formatPayloadValue("description", description)))
+		}
+		return strings.Join(parts, " ")
 	case pebbles.EventTypeClose:
 		if description := event.Payload["description"]; description != "" {
 			return fmt.Sprintf("description=%s", formatPayloadValue("description", description))
@@ -390,6 +404,18 @@ func logEventDetailLines(event pebbles.Event) []string {
 		if status := event.Payload["status"]; status != "" {
 			return []string{fmt.Sprintf("status=%s", status)}
 		}
+	case pebbles.EventTypeUpdate:
+		var lines []string
+		if issueType := event.Payload["type"]; issueType != "" {
+			lines = append(lines, fmt.Sprintf("type=%s", issueType))
+		}
+		if priority := event.Payload["priority"]; priority != "" {
+			lines = append(lines, fmt.Sprintf("priority=%s", formatPriority(priority)))
+		}
+		if description := event.Payload["description"]; description != "" {
+			lines = append(lines, fmt.Sprintf("description=%s", formatPayloadValue("description", description)))
+		}
+		return lines
 	case pebbles.EventTypeClose:
 		if description := event.Payload["description"]; description != "" {
 			return []string{fmt.Sprintf("description=%s", formatPayloadValue("description", description))}

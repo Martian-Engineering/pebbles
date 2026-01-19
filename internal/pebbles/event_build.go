@@ -19,6 +19,11 @@ func NewStatusEvent(issueID, status, timestamp string) Event {
 	return Event{Type: EventTypeStatus, Timestamp: timestamp, IssueID: issueID, Payload: payload}
 }
 
+// NewUpdateEvent builds an issue field update event.
+func NewUpdateEvent(issueID, timestamp string, payload map[string]string) Event {
+	return Event{Type: EventTypeUpdate, Timestamp: timestamp, IssueID: issueID, Payload: payload}
+}
+
 // NewCloseEvent builds a close event.
 func NewCloseEvent(issueID, timestamp string) Event {
 	return Event{Type: EventTypeClose, Timestamp: timestamp, IssueID: issueID, Payload: map[string]string{}}

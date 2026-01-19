@@ -201,3 +201,4 @@
 {"type":"create","timestamp":"2026-01-19T22:47:09.455289Z","issue_id":"pb-55d","payload":{"description":"Extend pb update to edit issue type, description, and priority (and define event schema/mappings).","priority":"2","title":"Support updating issue fields","type":"feature"}}
 {"type":"status_update","timestamp":"2026-01-19T22:51:26.229701Z","issue_id":"pb-55d","payload":{"status":"in_progress"}}
 {"type":"comment","timestamp":"2026-01-19T22:51:32.432405Z","issue_id":"pb-55d","payload":{"body":"Include update -h usage output and README usage section updates when adding new fields."}}
+{"type":"close","timestamp":"2026-01-19T23:01:34.335888Z","issue_id":"pb-55d","payload":{}}
