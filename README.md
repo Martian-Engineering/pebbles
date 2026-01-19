@@ -155,3 +155,4 @@ data is unavailable (or `--no-git` is used), they render as `unknown`.
 - Git merges are safe because events are append-only.
 - Run `pb init` in the project root before using other commands.
 - Repo setup (including Martian-Engineering remote) is in `docs/REPO_SETUP.md`.
+- Release notes live in `CHANGELOG.md`.

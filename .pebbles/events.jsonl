@@ -178,3 +178,5 @@
 {"type":"create","timestamp":"2026-01-19T22:05:30.429002Z","issue_id":"pb-f07","payload":{"description":"Spec out a curl-based installer for pb binaries (similar to beads), including release layout and usage.","priority":"2","title":"Define curl-based install workflow","type":"feature"}}
 {"type":"status_update","timestamp":"2026-01-19T22:11:47.266439Z","issue_id":"pb-1c0","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-19T22:12:20.659006Z","issue_id":"pb-1c0","payload":{}}
+{"type":"status_update","timestamp":"2026-01-19T22:12:50.125559Z","issue_id":"pb-8fc","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T22:13:17.040084Z","issue_id":"pb-8fc","payload":{}}
