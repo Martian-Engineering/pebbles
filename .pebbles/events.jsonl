@@ -176,3 +176,5 @@
 {"type":"create","timestamp":"2026-01-19T22:05:17.001913Z","issue_id":"pb-1c0","payload":{"description":"Document and/or automate adding the Martian-Engineering org remote (not personal) for this repo.","priority":"2","title":"Add Martian-Engineering git remote setup","type":"task"}}
 {"type":"create","timestamp":"2026-01-19T22:05:22.645264Z","issue_id":"pb-8fc","payload":{"description":"Add a changelog format and update workflow for releases.","priority":"2","title":"Introduce CHANGELOG.md","type":"task"}}
 {"type":"create","timestamp":"2026-01-19T22:05:30.429002Z","issue_id":"pb-f07","payload":{"description":"Spec out a curl-based installer for pb binaries (similar to beads), including release layout and usage.","priority":"2","title":"Define curl-based install workflow","type":"feature"}}
+{"type":"status_update","timestamp":"2026-01-19T22:11:47.266439Z","issue_id":"pb-1c0","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T22:12:20.659006Z","issue_id":"pb-1c0","payload":{}}
