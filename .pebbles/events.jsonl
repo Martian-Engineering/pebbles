@@ -53,3 +53,36 @@
 {"type":"create","timestamp":"2026-01-19T17:53:08.187043Z","issue_id":"pebbles-220d3ca7","payload":{"description":"Add tests for dep_type behavior (ready, list indentation).","priority":"2","title":"Typed deps: tests","type":"task"}}
 {"type":"close","timestamp":"2026-01-19T17:53:15.195988Z","issue_id":"pebbles-2eaa5d01","payload":{}}
 {"type":"close","timestamp":"2026-01-19T18:07:12.284192Z","issue_id":"pebbles-e6f2b053","payload":{}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.705234Z","issue_id":"pebbles-220d3ca7","payload":{"new_id":"pb-220d3ca7"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.705344Z","issue_id":"pebbles-24d8950a","payload":{"new_id":"pb-24d8950a"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.705426Z","issue_id":"pebbles-277f1c2b","payload":{"new_id":"pb-277f1c2b"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.705503Z","issue_id":"pebbles-34cd3331","payload":{"new_id":"pb-34cd3331"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.705584Z","issue_id":"pebbles-5054522d","payload":{"new_id":"pb-5054522d"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.70566Z","issue_id":"pebbles-6666e840","payload":{"new_id":"pb-6666e840"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.705737Z","issue_id":"pebbles-79bb7b8b","payload":{"new_id":"pb-79bb7b8b"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.705812Z","issue_id":"pebbles-7c9ef95f","payload":{"new_id":"pb-7c9ef95f"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.705889Z","issue_id":"pebbles-975c8c06","payload":{"new_id":"pb-975c8c06"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.705961Z","issue_id":"pebbles-b6b78d55","payload":{"new_id":"pb-b6b78d55"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.706033Z","issue_id":"pebbles-ba5238a7","payload":{"new_id":"pb-ba5238a7"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.706107Z","issue_id":"pebbles-cc197e63","payload":{"new_id":"pb-cc197e63"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.70618Z","issue_id":"pebbles-cc5b8f92","payload":{"new_id":"pb-cc5b8f92"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.706256Z","issue_id":"pebbles-d4b3e006","payload":{"new_id":"pb-d4b3e006"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.706328Z","issue_id":"pebbles-d4efc478","payload":{"new_id":"pb-d4efc478"}}
+{"type":"rename","timestamp":"2026-01-19T18:12:56.706403Z","issue_id":"pebbles-e4455245","payload":{"new_id":"pb-e4455245"}}
+{"type":"create","timestamp":"2026-01-19T18:15:22.572478Z","issue_id":"pb-16d44711","payload":{"description":"After running pb rename-prefix, old issue IDs remain in list; add a step to hide/rename or retire old IDs so list does not show duplicates or mixed prefixes.","priority":"2","title":"Rename-prefix should retire old IDs","type":"bug"}}
+{"type":"status_update","timestamp":"2026-01-19T18:15:29.09147Z","issue_id":"pb-16d44711","payload":{"status":"in_progress"}}
+{"type":"create","timestamp":"2026-01-19T18:18:28.296531Z","issue_id":"pb-7e001ed5","payload":{"description":"Running pb with no args prints help then exits with status 1; consider exit 0 after showing help.","priority":"4","title":"pb with no args exits non-zero","type":"bug"}}
+{"type":"rename","timestamp":"2026-01-19T18:24:39.476953Z","issue_id":"pebbles-2d76e51c","payload":{"new_id":"pb-2d76e51c"}}
+{"type":"rename","timestamp":"2026-01-19T18:24:39.477041Z","issue_id":"pebbles-2eaa5d01","payload":{"new_id":"pb-2eaa5d01"}}
+{"type":"rename","timestamp":"2026-01-19T18:24:39.47712Z","issue_id":"pebbles-4db13888","payload":{"new_id":"pb-4db13888"}}
+{"type":"rename","timestamp":"2026-01-19T18:24:39.477199Z","issue_id":"pebbles-4db6348d","payload":{"new_id":"pb-4db6348d"}}
+{"type":"rename","timestamp":"2026-01-19T18:24:39.477273Z","issue_id":"pebbles-511e9f30","payload":{"new_id":"pb-511e9f30"}}
+{"type":"rename","timestamp":"2026-01-19T18:24:39.477363Z","issue_id":"pebbles-aa03707b","payload":{"new_id":"pb-aa03707b"}}
+{"type":"rename","timestamp":"2026-01-19T18:24:39.477444Z","issue_id":"pebbles-b7fdf344","payload":{"new_id":"pb-b7fdf344"}}
+{"type":"rename","timestamp":"2026-01-19T18:24:39.477525Z","issue_id":"pebbles-bf887cf2","payload":{"new_id":"pb-bf887cf2"}}
+{"type":"rename","timestamp":"2026-01-19T18:24:39.477618Z","issue_id":"pebbles-c5428695","payload":{"new_id":"pb-c5428695"}}
+{"type":"rename","timestamp":"2026-01-19T18:24:39.477716Z","issue_id":"pebbles-c794f359","payload":{"new_id":"pb-c794f359"}}
+{"type":"rename","timestamp":"2026-01-19T18:24:39.477803Z","issue_id":"pebbles-e6f2b053","payload":{"new_id":"pb-e6f2b053"}}
+{"type":"create","timestamp":"2026-01-19T18:26:17.996817Z","issue_id":"pb-1d1a91ce","payload":{"description":"Clarify that rename-prefix flags must precede the prefix argument (or adjust parser). Update help/README/usage to reduce confusion.","priority":"3","title":"Document rename-prefix flag ordering","type":"task"}}
+{"type":"status_update","timestamp":"2026-01-19T18:26:21.418182Z","issue_id":"pb-1d1a91ce","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T18:30:38.580631Z","issue_id":"pb-1d1a91ce","payload":{}}

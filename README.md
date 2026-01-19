@@ -38,8 +38,11 @@ pb close pb-abc12345
 # Rename an issue id
 pb rename pb-abc12345 pb-new1234
 
-# Rename open issues to a new prefix
-pb rename-prefix peb --open
+# Rename open issues to a new prefix (flags before prefix)
+pb rename-prefix --open peb
+
+# Rename all issues to a new prefix
+pb rename-prefix --full peb
 
 # Set the prefix for new issue IDs
 pb prefix set peb

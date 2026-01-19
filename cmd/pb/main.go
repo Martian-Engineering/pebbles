@@ -380,7 +380,7 @@ func runRenamePrefix(root string, args []string) {
 		exitError(err)
 	}
 	if fs.NArg() != 1 {
-		exitError(fmt.Errorf("usage: pb rename-prefix <prefix> [--full|--open]"))
+		exitError(fmt.Errorf("usage: pb rename-prefix [--full|--open] <prefix>"))
 	}
 	if *full && *open {
 		exitError(fmt.Errorf("choose either --full or --open"))
@@ -500,7 +500,7 @@ func printUsage() {
 	fmt.Println("  update      Update an issue")
 	fmt.Println("  close       Close an issue")
 	fmt.Println("  rename      Rename an issue id")
-	fmt.Println("  rename-prefix Rename open issues to a new prefix")
+	fmt.Println("  rename-prefix Rename issues to a new prefix (flags before prefix)")
 	fmt.Println("  ready       Show issues ready to work (no blockers)")
 	fmt.Println("")
 	fmt.Println("Dependencies:")
