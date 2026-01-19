@@ -251,16 +251,33 @@ func runDep(root string, args []string) {
 // runDepAdd appends a dependency add event.
 func runDepAdd(root, issueID, dependsOn, depType string) {
 	// Ensure both sides exist before appending the event.
-	if _, _, err := pebbles.GetIssue(root, issueID); err != nil {
+	issue, _, err := pebbles.GetIssue(root, issueID)
+	if err != nil {
 		exitError(err)
 	}
-	if _, _, err := pebbles.GetIssue(root, dependsOn); err != nil {
+	parent, _, err := pebbles.GetIssue(root, dependsOn)
+	if err != nil {
 		exitError(err)
 	}
-	event := pebbles.NewDepAddEvent(issueID, dependsOn, depType, pebbles.NowTimestamp())
-	// Append the event and rebuild the cache.
-	if err := pebbles.AppendEvent(root, event); err != nil {
-		exitError(err)
+	issueID = issue.ID
+	dependsOn = parent.ID
+	var events []pebbles.Event
+	// Parent-child deps should use parent-based child IDs for lineage.
+	if depType == pebbles.DepTypeParentChild && !pebbles.HasParentChildSuffix(dependsOn, issueID) {
+		childID, err := pebbles.NextChildIssueID(root, dependsOn)
+		if err != nil {
+			exitError(err)
+		}
+		rename := pebbles.NewRenameEvent(issueID, childID, pebbles.NowTimestamp())
+		events = append(events, rename)
+		issueID = childID
+	}
+	events = append(events, pebbles.NewDepAddEvent(issueID, dependsOn, depType, pebbles.NowTimestamp()))
+	// Append the events and rebuild the cache once.
+	for _, event := range events {
+		if err := pebbles.AppendEvent(root, event); err != nil {
+			exitError(err)
+		}
 	}
 	if err := pebbles.RebuildCache(root); err != nil {
 		exitError(err)

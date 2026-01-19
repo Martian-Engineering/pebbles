@@ -7,6 +7,7 @@ Pebbles is a minimal, git-friendly issue tracker that uses an append-only event 
 - Append-only event log: `.pebbles/events.jsonl`
 - SQLite cache: `.pebbles/pebbles.db` (rebuilt from the log)
 - Deterministic IDs: project prefix + hash of title + timestamp + host (3-char suffix by default; expands on collision)
+- Parent-child IDs: child issues linked via parent-child deps are renamed to `<parent>.<N>` using the first available suffix
 
 ## Install
 
@@ -49,6 +50,9 @@ pb prefix set peb
 
 # Add a dependency
 pb dep add pb-issue-a pb-issue-b
+
+# Add a parent-child dependency (child IDs become <parent>.<N>)
+pb dep add --type parent-child pb-child pb-parent
 
 # Remove a dependency
 pb dep rm pb-issue-a pb-issue-b

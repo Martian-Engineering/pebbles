@@ -150,3 +150,5 @@
 {"type":"close","timestamp":"2026-01-19T21:21:01.468177Z","issue_id":"pb-18d","payload":{}}
 {"type":"status_update","timestamp":"2026-01-19T20:56:19.608713Z","issue_id":"pb-18d","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-19T21:07:18.935032Z","issue_id":"pb-18d","payload":{}}
+{"type":"status_update","timestamp":"2026-01-19T20:56:07.200785Z","issue_id":"pb-0be","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T21:03:19.438393Z","issue_id":"pb-0be","payload":{}}
