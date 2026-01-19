@@ -24,6 +24,12 @@ func NewCloseEvent(issueID, timestamp string) Event {
 	return Event{Type: EventTypeClose, Timestamp: timestamp, IssueID: issueID, Payload: map[string]string{}}
 }
 
+// NewCommentEvent builds a comment event.
+func NewCommentEvent(issueID, body, timestamp string) Event {
+	payload := map[string]string{"body": body}
+	return Event{Type: EventTypeComment, Timestamp: timestamp, IssueID: issueID, Payload: payload}
+}
+
 // NewRenameEvent builds a rename event for an issue ID change.
 func NewRenameEvent(issueID, newIssueID, timestamp string) Event {
 	payload := map[string]string{"new_id": newIssueID}

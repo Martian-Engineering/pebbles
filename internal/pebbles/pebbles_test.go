@@ -69,6 +69,48 @@ func TestCreateUpdateClose(t *testing.T) {
 	}
 }
 
+// TestListIssueComments verifies comment events are collected by issue.
+func TestListIssueComments(t *testing.T) {
+	root := t.TempDir()
+	if err := InitProject(root); err != nil {
+		t.Fatalf("init project: %v", err)
+	}
+	issueID := "pb-comment"
+	renamedID := "pb-comment-new"
+	// Create the issue and append comment events around a rename.
+	if err := AppendEvent(root, NewCreateEvent(issueID, "Commented", "", "task", "2024-01-07T00:00:00Z", 2)); err != nil {
+		t.Fatalf("append create: %v", err)
+	}
+	if err := AppendEvent(root, NewCommentEvent(issueID, "First note", "2024-01-07T00:00:01Z")); err != nil {
+		t.Fatalf("append comment 1: %v", err)
+	}
+	if err := AppendEvent(root, NewRenameEvent(issueID, renamedID, "2024-01-07T00:00:02Z")); err != nil {
+		t.Fatalf("append rename: %v", err)
+	}
+	if err := AppendEvent(root, NewCommentEvent(issueID, "Second note", "2024-01-07T00:00:03Z")); err != nil {
+		t.Fatalf("append comment 2: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache: %v", err)
+	}
+	comments, err := ListIssueComments(root, issueID)
+	if err != nil {
+		t.Fatalf("list comments: %v", err)
+	}
+	if len(comments) != 2 {
+		t.Fatalf("expected 2 comments, got %d", len(comments))
+	}
+	if comments[0].IssueID != renamedID || comments[1].IssueID != renamedID {
+		t.Fatalf("expected comments to resolve to %s", renamedID)
+	}
+	if comments[0].Body != "First note" {
+		t.Fatalf("expected first comment body, got %q", comments[0].Body)
+	}
+	if comments[1].Body != "Second note" {
+		t.Fatalf("expected second comment body, got %q", comments[1].Body)
+	}
+}
+
 // TestRenameEvent verifies rename events update IDs and resolve aliases.
 func TestRenameEvent(t *testing.T) {
 	root := t.TempDir()

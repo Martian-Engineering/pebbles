@@ -23,6 +23,13 @@ type Issue struct {
 	ClosedAt    string
 }
 
+// IssueComment represents a user-authored comment on an issue.
+type IssueComment struct {
+	IssueID   string
+	Body      string
+	Timestamp string
+}
+
 // IssueHierarchyItem represents an issue with its indentation depth.
 type IssueHierarchyItem struct {
 	Issue Issue
@@ -41,6 +48,8 @@ const (
 	EventTypeStatus = "status_update"
 	// EventTypeClose indicates a close event.
 	EventTypeClose = "close"
+	// EventTypeComment indicates a comment event.
+	EventTypeComment = "comment"
 	// EventTypeRename indicates an issue ID rename event.
 	EventTypeRename = "rename"
 	// EventTypeDepAdd indicates a dependency add event.

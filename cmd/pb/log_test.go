@@ -73,6 +73,10 @@ func TestLogEventDetails(t *testing.T) {
 	if got := logEventDetails(closeEvent); got != "description=Done" {
 		t.Fatalf("close details mismatch: %q", got)
 	}
+	comment := pebbles.Event{Type: pebbles.EventTypeComment, Payload: map[string]string{"body": "Needs attention"}}
+	if got := logEventDetails(comment); got != `body="Needs attention"` {
+		t.Fatalf("comment details mismatch: %q", got)
+	}
 	unknown := pebbles.Event{
 		Type: "unknown_type",
 		Payload: map[string]string{

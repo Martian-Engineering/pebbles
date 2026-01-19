@@ -37,6 +37,8 @@ func main() {
 		runUpdate(root, args)
 	case "close":
 		runClose(root, args)
+	case "comment":
+		runComment(root, args)
 	case "dep":
 		runDep(root, args)
 	case "ready":
@@ -147,7 +149,11 @@ func runShow(root string, args []string) {
 	if err != nil {
 		exitError(err)
 	}
-	printIssue(root, issue, deps)
+	comments, err := pebbles.ListIssueComments(root, id)
+	if err != nil {
+		exitError(err)
+	}
+	printIssue(root, issue, deps, comments)
 }
 
 // runUpdate handles pb update.
@@ -202,6 +208,36 @@ func runClose(root string, args []string) {
 	}
 	event := pebbles.NewCloseEvent(id, pebbles.NowTimestamp())
 	// Append the close event and rebuild the cache.
+	if err := pebbles.AppendEvent(root, event); err != nil {
+		exitError(err)
+	}
+	if err := pebbles.RebuildCache(root); err != nil {
+		exitError(err)
+	}
+}
+
+// runComment handles pb comment.
+func runComment(root string, args []string) {
+	fs := flag.NewFlagSet("comment", flag.ExitOnError)
+	body := fs.String("body", "", "Comment body")
+	_ = fs.Parse(reorderFlags(args, map[string]bool{"--body": true}))
+	// Validate inputs before appending a comment event.
+	if err := ensureProject(root); err != nil {
+		exitError(err)
+	}
+	if fs.NArg() != 1 {
+		exitError(fmt.Errorf("comment requires issue id"))
+	}
+	if strings.TrimSpace(*body) == "" {
+		exitError(fmt.Errorf("comment body is required"))
+	}
+	id := fs.Arg(0)
+	// Confirm the issue exists in the cache.
+	if _, _, err := pebbles.GetIssue(root, id); err != nil {
+		exitError(err)
+	}
+	event := pebbles.NewCommentEvent(id, *body, pebbles.NowTimestamp())
+	// Append the event and rebuild the cache.
 	if err := pebbles.AppendEvent(root, event); err != nil {
 		exitError(err)
 	}
@@ -479,7 +515,7 @@ func ensureProject(root string) error {
 }
 
 // printIssue renders a single issue to stdout.
-func printIssue(root string, issue pebbles.Issue, deps []string) {
+func printIssue(root string, issue pebbles.Issue, deps []string, comments []pebbles.IssueComment) {
 	// Header includes the status icon and priority badge.
 	statusIcon := renderStatusIcon(issue.Status)
 	priorityLabel := renderPriorityLabel(issue.Priority)
@@ -511,15 +547,35 @@ func printIssue(root string, issue pebbles.Issue, deps []string) {
 	fmt.Println("\nDEPENDENCIES")
 	if len(deps) == 0 {
 		fmt.Println("  (none)")
+	} else {
+		for _, dep := range deps {
+			status, err := pebbles.IssueStatus(root, dep)
+			if err != nil {
+				fmt.Printf("  → %s (unknown)\n", dep)
+				continue
+			}
+			fmt.Printf("  → %s (%s)\n", dep, status)
+		}
+	}
+	// Comments keep issue discussion history close to the details.
+	printIssueComments(comments)
+}
+
+// printIssueComments prints issue comments with timestamps and indentation.
+func printIssueComments(comments []pebbles.IssueComment) {
+	fmt.Println("\nCOMMENTS")
+	if len(comments) == 0 {
+		fmt.Println("  (none)")
 		return
 	}
-	for _, dep := range deps {
-		status, err := pebbles.IssueStatus(root, dep)
-		if err != nil {
-			fmt.Printf("  → %s (unknown)\n", dep)
-			continue
+	for index, comment := range comments {
+		if index > 0 {
+			fmt.Println("")
 		}
-		fmt.Printf("  → %s (%s)\n", dep, renderStatusValue(status))
+		fmt.Printf("  %s\n", formatCommentTimestamp(comment.Timestamp))
+		for _, line := range formatCommentBodyLines(comment.Body) {
+			fmt.Printf("    %s\n", line)
+		}
 	}
 }
 
@@ -536,6 +592,7 @@ func printUsage() {
 	fmt.Println("  show        Show issue details")
 	fmt.Println("  update      Update an issue")
 	fmt.Println("  close       Close an issue")
+	fmt.Println("  comment     Add a comment to an issue")
 	fmt.Println("  rename      Rename an issue id")
 	fmt.Println("  rename-prefix Rename issues to a new prefix (flags before prefix)")
 	fmt.Println("  ready       Show issues ready to work (no blockers)")
@@ -588,6 +645,23 @@ func formatDate(timestamp string) string {
 		return timestamp
 	}
 	return parsed.Format("2006-01-02")
+}
+
+// formatCommentTimestamp renders comment timestamps with time-of-day.
+func formatCommentTimestamp(timestamp string) string {
+	parsed, err := time.Parse(time.RFC3339Nano, timestamp)
+	if err != nil {
+		return timestamp
+	}
+	return parsed.UTC().Format("2006-01-02 15:04:05")
+}
+
+// formatCommentBodyLines splits a comment body into display lines.
+func formatCommentBodyLines(body string) []string {
+	if strings.TrimSpace(body) == "" {
+		return []string{"(empty)"}
+	}
+	return strings.Split(body, "\n")
 }
 
 // splitIssueID separates an issue ID into prefix and suffix.

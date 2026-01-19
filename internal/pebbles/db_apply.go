@@ -3,6 +3,7 @@ package pebbles
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 // resetSchema drops the issue and dependency tables.
@@ -83,6 +84,12 @@ func applyEvent(db *sql.DB, event Event) error {
 			return err
 		}
 		return applyClose(db, resolved)
+	case EventTypeComment:
+		resolved, err := resolveEventIssueID(db, event)
+		if err != nil {
+			return err
+		}
+		return applyComment(db, resolved)
 	case EventTypeDepAdd:
 		resolved, err := resolveEventDependencyIDs(db, event)
 		if err != nil {
@@ -239,6 +246,19 @@ func applyClose(db *sql.DB, event Event) error {
 		return fmt.Errorf("close issue: %w", err)
 	}
 	return requireRow(result, "close for missing issue")
+}
+
+// applyComment validates comment events without mutating the cache.
+func applyComment(db *sql.DB, event Event) error {
+	body := strings.TrimSpace(event.Payload["body"])
+	if body == "" {
+		return fmt.Errorf("comment event missing body")
+	}
+	// Comments don't mutate issue rows, but they must target an existing issue.
+	if err := ensureIssueExists(db, event.IssueID); err != nil {
+		return err
+	}
+	return nil
 }
 
 // applyDepAdd inserts a dependency from a dep_add event.

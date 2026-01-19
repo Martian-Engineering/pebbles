@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	payloadKeyOrder        = []string{"title", "description", "type", "priority", "status", "depends_on", "dep_type"}
+	payloadKeyOrder        = []string{"title", "description", "body", "type", "priority", "status", "depends_on", "dep_type"}
 	defaultLogColumnWidths = logColumnWidths{
 		Actor:      16,
 		ActorDate:  10,
@@ -311,6 +311,8 @@ func logEventLabel(event pebbles.Event) string {
 		return "status"
 	case pebbles.EventTypeClose:
 		return "close"
+	case pebbles.EventTypeComment:
+		return "comment"
 	case pebbles.EventTypeDepAdd:
 		return "dep_add"
 	case pebbles.EventTypeDepRemove:
@@ -345,6 +347,10 @@ func logEventDetails(event pebbles.Event) string {
 	case pebbles.EventTypeClose:
 		if description := event.Payload["description"]; description != "" {
 			return fmt.Sprintf("description=%s", formatPayloadValue("description", description))
+		}
+	case pebbles.EventTypeComment:
+		if body := event.Payload["body"]; body != "" {
+			return fmt.Sprintf("body=%s", formatPayloadValue("body", body))
 		}
 	case pebbles.EventTypeDepAdd, pebbles.EventTypeDepRemove:
 		parts := make([]string, 0, 2)
@@ -387,6 +393,10 @@ func logEventDetailLines(event pebbles.Event) []string {
 	case pebbles.EventTypeClose:
 		if description := event.Payload["description"]; description != "" {
 			return []string{fmt.Sprintf("description=%s", formatPayloadValue("description", description))}
+		}
+	case pebbles.EventTypeComment:
+		if body := event.Payload["body"]; body != "" {
+			return []string{fmt.Sprintf("body=%s", formatPayloadValue("body", body))}
 		}
 	case pebbles.EventTypeDepAdd, pebbles.EventTypeDepRemove:
 		var lines []string

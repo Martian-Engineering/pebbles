@@ -36,6 +36,9 @@ pb update pb-abc --status in_progress
 # Close an issue
 pb close pb-abc
 
+# Add a comment
+pb comment pb-abc --body "Investigating the root cause"
+
 # Rename an issue id
 pb rename pb-abc pb-new
 
@@ -100,9 +103,10 @@ Details are rendered per event type:
 - create: `type=<issue_type> priority=<P0-P4> description="<text>"`
 - status_update: `status=<status>`
 - close: `description="<text>"`
+- comment: `body="<text>"`
 - dep_add/dep_rm: `depends_on=<issue_id>`
 - unknown types: payload key/value pairs ordered as `title`, `description`,
-  `type`, `priority`, `status`, `depends_on`, then alphabetically
+  `body`, `type`, `priority`, `status`, `depends_on`, then alphabetically
 
 Flags:
 
