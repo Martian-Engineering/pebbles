@@ -12,8 +12,11 @@ Pebbles is a minimal, git-friendly issue tracker that uses an append-only event 
 ## Install
 
 ```bash
+# Install latest
 curl -fsSL https://raw.githubusercontent.com/Martian-Engineering/pebbles/master/scripts/install.sh | sh
+# Install a specific version
 PB_VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/Martian-Engineering/pebbles/master/scripts/install.sh | sh
+# Install to a custom directory
 PB_INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/Martian-Engineering/pebbles/master/scripts/install.sh | sh
 ```
 
