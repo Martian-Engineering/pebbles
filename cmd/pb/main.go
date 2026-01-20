@@ -12,7 +12,7 @@ import (
 	"pebbles/internal/pebbles"
 )
 
-const buildVersion = "v0.2.0"
+const buildVersion = "v0.2.2"
 
 // main dispatches pb subcommands.
 func main() {
