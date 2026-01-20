@@ -22,6 +22,7 @@ const (
 	ansiBrightYellow  = "\x1b[93m"
 	ansiBrightBlue    = "\x1b[94m"
 	ansiBrightMagenta = "\x1b[95m"
+	ansiBrightCyan    = "\x1b[96m"
 )
 
 var colorEnabled = shouldColor()

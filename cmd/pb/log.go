@@ -525,7 +525,7 @@ func logEventTypeColor(eventType string) string {
 	case "comment":
 		return ansiBrightMagenta
 	case "dep_add":
-		return ansiCyan
+		return ansiBrightCyan
 	case "dep_rm":
 		return ansiRed
 	default:
@@ -540,12 +540,12 @@ func renderLogEventType(eventType string) string {
 
 // renderLogLabel applies muted styling to log field labels.
 func renderLogLabel(label string) string {
-	return colorize(label, ansiDim+ansiGray)
+	return colorize(label, ansiBrightCyan)
 }
 
 // renderLogIssueID returns a colored issue ID for log output.
 func renderLogIssueID(issueID string) string {
-	return colorize(issueID, ansiCyan)
+	return colorize(issueID, ansiBrightCyan)
 }
 
 // renderLogDetail formats a log detail key/value with ANSI styling.

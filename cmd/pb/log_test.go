@@ -269,7 +269,7 @@ func TestFormatPrettyLogColors(t *testing.T) {
 	if !strings.Contains(output, ansiBrightBlue) {
 		t.Fatalf("expected event type color in output: %q", output)
 	}
-	if !strings.Contains(output, ansiCyan) {
+	if !strings.Contains(output, ansiBrightCyan) {
 		t.Fatalf("expected issue id color in output: %q", output)
 	}
 	if !strings.Contains(output, ansiBold) {
