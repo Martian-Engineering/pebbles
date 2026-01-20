@@ -202,3 +202,32 @@
 {"type":"status_update","timestamp":"2026-01-19T22:51:26.229701Z","issue_id":"pb-55d","payload":{"status":"in_progress"}}
 {"type":"comment","timestamp":"2026-01-19T22:51:32.432405Z","issue_id":"pb-55d","payload":{"body":"Include update -h usage output and README usage section updates when adding new fields."}}
 {"type":"close","timestamp":"2026-01-19T23:01:34.335888Z","issue_id":"pb-55d","payload":{}}
+{"type":"status_update","timestamp":"2026-01-19T22:40:30.183606Z","issue_id":"pb-c95","payload":{"status":"in_progress"}}
+{"type":"comment","timestamp":"2026-01-19T22:47:36.799628Z","issue_id":"pb-c95","payload":{"body":"Spec draft at docs/pb-beads-import.md with mapping, workflow, repo checks (claude-team, connected-play), and limitations."}}
+{"type":"close","timestamp":"2026-01-19T22:47:46.840478Z","issue_id":"pb-c95","payload":{}}
+{"type":"status_update","timestamp":"2026-01-19T22:50:51.368069Z","issue_id":"pb-c95","payload":{"status":"in_progress"}}
+{"type":"comment","timestamp":"2026-01-19T22:50:57.308072Z","issue_id":"pb-c95","payload":{"body":"Updated spec: tombstones are skipped by default; --include-tombstones required to import deleted issues."}}
+{"type":"close","timestamp":"2026-01-19T22:51:03.172833Z","issue_id":"pb-c95","payload":{}}
+{"type":"create","timestamp":"2026-01-19T22:52:19.354289Z","issue_id":"pb-fc0","payload":{"description":"Implement pb import beads per docs/pb-beads-import.md (mapping, flags, safety). Derived from spec pb-c95.","priority":"1","title":"Beads import tool","type":"epic"}}
+{"type":"create","timestamp":"2026-01-19T22:52:28.982829Z","issue_id":"pb-f16","payload":{"description":"Load .beads/issues.jsonl, validate required fields, normalize priorities, and capture warnings for missing timestamps or invalid data. Skip tombstones unless include flag is set.","priority":"1","title":"Parse Beads JSONL issues","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T22:52:33.947716Z","issue_id":"pb-167","payload":{"description":"Convert parsed Beads issues to Pebbles events (create, status_update, close, comment, dep_add) with correct timestamps and stable ordering. Preserve issue IDs.","priority":"1","title":"Map Beads issues to Pebbles events","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T22:52:39.166673Z","issue_id":"pb-3e5","payload":{"description":"Implement pb import beads command with flags (--from, --prefix, --include-tombstones, --dry-run, --backup, --force), prefix detection, summary output, and .pebbles backup handling.","priority":"1","title":"Add pb import beads CLI + safety","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T22:52:44.186736Z","issue_id":"pb-9d7","payload":{"description":"Write dep_add events directly (blocks, parent-child) without CLI renames. Skip unknown dep types and missing targets, warn when skipped tombstones are referenced.","priority":"1","title":"Import dependencies without renames","type":"task"}}
+{"type":"create","timestamp":"2026-01-19T22:52:50.54786Z","issue_id":"pb-d59","payload":{"description":"Add fixtures and tests for beads import (tombstone default skip, include flag, parent-child deps, unknown dep types, missing timestamps).","priority":"2","title":"Tests for beads import","type":"task"}}
+{"type":"dep_add","timestamp":"2026-01-19T22:52:57.343279Z","issue_id":"pb-fc0","payload":{"dep_type":"blocks","depends_on":"pb-f16"}}
+{"type":"dep_add","timestamp":"2026-01-19T22:53:02.853373Z","issue_id":"pb-fc0","payload":{"dep_type":"blocks","depends_on":"pb-167"}}
+{"type":"dep_add","timestamp":"2026-01-19T22:53:08.256576Z","issue_id":"pb-fc0","payload":{"dep_type":"blocks","depends_on":"pb-3e5"}}
+{"type":"dep_add","timestamp":"2026-01-19T22:53:14.21774Z","issue_id":"pb-fc0","payload":{"dep_type":"blocks","depends_on":"pb-9d7"}}
+{"type":"dep_add","timestamp":"2026-01-19T22:53:20.898459Z","issue_id":"pb-fc0","payload":{"dep_type":"blocks","depends_on":"pb-d59"}}
+{"type":"status_update","timestamp":"2026-01-19T22:56:34.239201Z","issue_id":"pb-fc0","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T22:56:38.951267Z","issue_id":"pb-f16","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T23:04:16.40918Z","issue_id":"pb-167","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T23:04:21.532095Z","issue_id":"pb-3e5","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T23:04:28.760241Z","issue_id":"pb-9d7","payload":{"status":"in_progress"}}
+{"type":"status_update","timestamp":"2026-01-19T23:13:30.738188Z","issue_id":"pb-d59","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-19T23:13:48.312984Z","issue_id":"pb-f16","payload":{}}
+{"type":"close","timestamp":"2026-01-19T23:13:52.61523Z","issue_id":"pb-167","payload":{}}
+{"type":"close","timestamp":"2026-01-19T23:13:58.760293Z","issue_id":"pb-3e5","payload":{}}
+{"type":"close","timestamp":"2026-01-19T23:14:04.98486Z","issue_id":"pb-9d7","payload":{}}
+{"type":"close","timestamp":"2026-01-19T23:14:09.877599Z","issue_id":"pb-d59","payload":{}}
+{"type":"close","timestamp":"2026-01-19T23:14:16.391561Z","issue_id":"pb-fc0","payload":{}}
