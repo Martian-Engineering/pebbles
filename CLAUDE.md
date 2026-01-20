@@ -37,14 +37,14 @@ When working on complex features that require planning (via `EnterPlanMode`), fo
    - Create an **epic** for the overall feature/deployment
    - Create **subtasks** as individual Pebbles issues, one per discrete piece of work
    - Each issue description should capture relevant context from the plan (what to implement, key decisions, file paths)
-   - Set the epic to depend on each subtask using `pb dep add <epic-id> <subtask-id>`
+   - Link subtasks to the epic using `pb dep add --type parent-child <subtask-id> <epic-id>`
    - Add **execution dependencies** between subtasks using `pb dep add <task-a> <task-b>` (task-a depends on task-b)
 
 4. **Then proceed with implementation**: Work through the subtasks using the normal task workflow
 
 **Dependency direction**:
 - `pb dep add A B` means "A depends on B" (B blocks A)
-- For epic/subtask relationship: `pb dep add <epic-id> <subtask-id>`
+- For epic/subtask relationship: `pb dep add --type parent-child <subtask-id> <epic-id>`
 
 **Example**:
 ```bash
@@ -53,9 +53,9 @@ pb create --title="RDS Deployment & pg-sync Service" --type=epic --description="
 pb create --title="Create RDS Terraform module" --type=task --description="..."  # Returns task1-id
 pb create --title="Add RDS to dev environment" --type=task --description="..."   # Returns task2-id
 
-# Make epic depend on each subtask (subtasks block the epic)
-pb dep add <epic-id> <task1-id>
-pb dep add <epic-id> <task2-id>
+# Link subtasks to the epic (hierarchy + .N suffixes)
+pb dep add --type parent-child <task1-id> <epic-id>
+pb dep add --type parent-child <task2-id> <epic-id>
 
 # Add execution dependency (task2 waits for task1)
 pb dep add <task2-id> <task1-id>

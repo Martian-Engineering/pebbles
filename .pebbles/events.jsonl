@@ -245,3 +245,5 @@
 {"type":"create","timestamp":"2026-01-20T17:38:33.756097Z","issue_id":"pb-af5","payload":{"description":"Use ldflags to set version/commit/date, update pb --version output, and document/automate the release flow.","priority":"1","title":"Add build-time version metadata and release script","type":"feature"}}
 {"type":"status_update","timestamp":"2026-01-20T17:38:41.776445Z","issue_id":"pb-af5","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-20T17:40:25.266882Z","issue_id":"pb-af5","payload":{}}
+{"type":"create","timestamp":"2026-01-20T19:17:24.152473Z","issue_id":"pb-1ce","payload":{"description":"Update AGENTS.md and CLAUDE.md to use parent-child dep syntax for epic/subtask relationships.","priority":"3","title":"Align AGENTS/CLAUDE with parent-child deps","type":"task"}}
+{"type":"close","timestamp":"2026-01-20T19:17:31.841836Z","issue_id":"pb-1ce","payload":{}}
