@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -40,6 +41,8 @@ func main() {
 		runClose(root, args)
 	case "comment":
 		runComment(root, args)
+	case "import":
+		runImport(root, args)
 	case "dep":
 		runDep(root, args)
 	case "ready":
@@ -326,6 +329,65 @@ func runComment(root string, args []string) {
 	}
 }
 
+// runImport handles pb import.
+func runImport(root string, args []string) {
+	if len(args) < 1 {
+		exitError(fmt.Errorf("usage: pb import <beads> [flags]"))
+	}
+	switch args[0] {
+	case "beads":
+		runImportBeads(root, args[1:])
+	default:
+		exitError(fmt.Errorf("usage: pb import <beads> [flags]"))
+	}
+}
+
+// runImportBeads imports Beads issues into Pebbles.
+func runImportBeads(root string, args []string) {
+	fs := flag.NewFlagSet("import beads", flag.ExitOnError)
+	from := fs.String("from", "", "Beads repo root (default: current directory)")
+	prefix := fs.String("prefix", "", "Issue prefix override")
+	includeTombstones := fs.Bool("include-tombstones", false, "Import tombstone issues")
+	dryRun := fs.Bool("dry-run", false, "Preview import without writing")
+	backup := fs.Bool("backup", false, "Backup existing .pebbles directory")
+	force := fs.Bool("force", false, "Overwrite existing .pebbles directory")
+	_ = fs.Parse(reorderFlags(args, map[string]bool{"--from": true, "--prefix": true}))
+	// Reject unexpected positional arguments early.
+	if fs.NArg() != 0 {
+		exitError(fmt.Errorf("usage: pb import beads [flags]"))
+	}
+	if *backup && *force {
+		exitError(fmt.Errorf("choose either --backup or --force"))
+	}
+	// Resolve the source repo and build an import plan.
+	sourceRoot, err := resolveImportRoot(root, *from)
+	if err != nil {
+		exitError(err)
+	}
+	plan, err := pebbles.PlanBeadsImport(pebbles.BeadsImportOptions{
+		SourceRoot:        sourceRoot,
+		Prefix:            *prefix,
+		IncludeTombstones: *includeTombstones,
+		Now:               time.Now,
+	})
+	if err != nil {
+		exitError(err)
+	}
+	// Apply the plan when this isn't a dry run.
+	if !*dryRun {
+		if err := prepareBeadsImportTarget(root, plan.Result.Prefix, *backup, *force); err != nil {
+			exitError(err)
+		}
+		result, err := pebbles.ApplyBeadsImportPlan(root, plan)
+		if err != nil {
+			exitError(err)
+		}
+		printBeadsImportSummary(result, false, root)
+		return
+	}
+	printBeadsImportSummary(plan.Result, true, root)
+}
+
 // runDep handles pb dep commands.
 func runDep(root string, args []string) {
 	// Validate CLI arguments for dependency creation.
@@ -595,6 +657,87 @@ func ensureProject(root string) error {
 	return nil
 }
 
+func resolveImportRoot(root, from string) (string, error) {
+	trimmed := strings.TrimSpace(from)
+	if trimmed == "" {
+		return root, nil
+	}
+	// Resolve relative paths against the current working directory.
+	if !filepath.IsAbs(trimmed) {
+		trimmed = filepath.Join(root, trimmed)
+	}
+	resolved, err := filepath.Abs(trimmed)
+	if err != nil {
+		return "", fmt.Errorf("resolve source path: %w", err)
+	}
+	if _, err := os.Stat(resolved); err != nil {
+		return "", fmt.Errorf("source path not found: %w", err)
+	}
+	return resolved, nil
+}
+
+func prepareBeadsImportTarget(root, prefix string, backup, force bool) error {
+	if strings.TrimSpace(prefix) == "" {
+		return fmt.Errorf("prefix is required")
+	}
+	pebblesDir := pebbles.PebblesDir(root)
+	if _, err := os.Stat(pebblesDir); err == nil {
+		// Ensure we only proceed when the caller requested backup or overwrite.
+		if !backup && !force {
+			return fmt.Errorf("pebbles already initialized; use --backup or --force")
+		}
+		if backup {
+			backupName := fmt.Sprintf(".pebbles.backup-%s", time.Now().UTC().Format("20060102T150405Z"))
+			backupPath := filepath.Join(root, backupName)
+			if _, err := os.Stat(backupPath); err == nil {
+				return fmt.Errorf("backup path already exists: %s", backupPath)
+			}
+			if err := os.Rename(pebblesDir, backupPath); err != nil {
+				return fmt.Errorf("backup .pebbles: %w", err)
+			}
+		}
+		if force {
+			if err := os.RemoveAll(pebblesDir); err != nil {
+				return fmt.Errorf("remove .pebbles: %w", err)
+			}
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("check .pebbles: %w", err)
+	}
+	// Initialize a new Pebbles directory with the chosen prefix.
+	if err := pebbles.InitProjectWithPrefix(root, prefix); err != nil {
+		return err
+	}
+	return nil
+}
+
+func printBeadsImportSummary(result pebbles.BeadsImportResult, dryRun bool, targetRoot string) {
+	fmt.Printf("Source: %s\n", result.SourceRoot)
+	fmt.Printf("Target: %s\n", targetRoot)
+	fmt.Printf("Prefix: %s\n", result.Prefix)
+	fmt.Printf(
+		"Issues: %d total, %d imported, %d skipped (%d tombstones)\n",
+		result.IssuesTotal,
+		result.IssuesImported,
+		result.IssuesSkipped,
+		result.TombstonesSkipped,
+	)
+	fmt.Printf("Events planned: %d\n", result.EventsPlanned)
+	if dryRun {
+		fmt.Println("Dry run: no events written.")
+	} else {
+		fmt.Printf("Events written: %d\n", result.EventsWritten)
+	}
+	// Print warnings after the core summary for easy scanning.
+	if len(result.Warnings) == 0 {
+		return
+	}
+	fmt.Printf("Warnings: %d\n", len(result.Warnings))
+	for _, warning := range result.Warnings {
+		fmt.Printf("  - %s\n", warning)
+	}
+}
+
 // printIssue renders a single issue to stdout.
 func printIssue(root string, issue pebbles.Issue, deps []string, comments []pebbles.IssueComment) {
 	// Header includes the status icon and priority badge.
@@ -678,6 +821,9 @@ func printUsage() {
 	fmt.Println("  rename-prefix Rename issues to a new prefix (flags before prefix)")
 	fmt.Println("  ready       Show issues ready to work (no blockers)")
 	fmt.Println("  log         Show the event log (pretty view)")
+	fmt.Println("")
+	fmt.Println("Import:")
+	fmt.Println("  import beads Import issues from a Beads project")
 	fmt.Println("")
 	fmt.Println("Dependencies:")
 	fmt.Println("  dep add     Add a dependency (--type blocks|parent-child)")

@@ -36,6 +36,9 @@ pb init
 # Initialize with a custom prefix for new issue IDs
 pb init --prefix peb
 
+# Import issues from a Beads repo
+pb import beads --from /path/to/repo --backup
+
 # Create an issue
 pb create --title="Add login" --type=task --priority=P2 --description="Track login work"
 
