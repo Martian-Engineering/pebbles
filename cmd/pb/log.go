@@ -49,6 +49,12 @@ type logLine struct {
 	Details    string
 }
 
+// logDetailSections splits detail lines from description/body text.
+type logDetailSections struct {
+	Lines       []string
+	Description string
+}
+
 type logColumnWidths struct {
 	Actor      int
 	ActorDate  int
@@ -384,8 +390,8 @@ func logEventDetails(event pebbles.Event) string {
 	return ""
 }
 
-// logEventDetailLines returns payload details formatted as individual lines.
-func logEventDetailLines(event pebbles.Event) []string {
+// logEventDetailSections returns payload detail lines and description/body text.
+func logEventDetailSections(event pebbles.Event) logDetailSections {
 	switch event.Type {
 	case pebbles.EventTypeCreate:
 		// Limit create output to the fields that matter in logs.
@@ -396,13 +402,13 @@ func logEventDetailLines(event pebbles.Event) []string {
 		if priority := event.Payload["priority"]; priority != "" {
 			lines = append(lines, fmt.Sprintf("priority=%s", formatPriority(priority)))
 		}
-		if description := event.Payload["description"]; description != "" {
-			lines = append(lines, fmt.Sprintf("description=%s", formatLogDetailValue("description", description)))
+		return logDetailSections{
+			Lines:       lines,
+			Description: logDetailDescription(event.Payload["description"]),
 		}
-		return lines
 	case pebbles.EventTypeStatus:
 		if status := event.Payload["status"]; status != "" {
-			return []string{fmt.Sprintf("status=%s", status)}
+			return logDetailSections{Lines: []string{fmt.Sprintf("status=%s", status)}}
 		}
 	case pebbles.EventTypeUpdate:
 		var lines []string
@@ -412,18 +418,14 @@ func logEventDetailLines(event pebbles.Event) []string {
 		if priority := event.Payload["priority"]; priority != "" {
 			lines = append(lines, fmt.Sprintf("priority=%s", formatPriority(priority)))
 		}
-		if description := event.Payload["description"]; description != "" {
-			lines = append(lines, fmt.Sprintf("description=%s", formatLogDetailValue("description", description)))
+		return logDetailSections{
+			Lines:       lines,
+			Description: logDetailDescription(event.Payload["description"]),
 		}
-		return lines
 	case pebbles.EventTypeClose:
-		if description := event.Payload["description"]; description != "" {
-			return []string{fmt.Sprintf("description=%s", formatLogDetailValue("description", description))}
-		}
+		return logDetailSections{Description: logDetailDescription(event.Payload["description"])}
 	case pebbles.EventTypeComment:
-		if body := event.Payload["body"]; body != "" {
-			return []string{fmt.Sprintf("body=%s", formatLogDetailValue("body", body))}
-		}
+		return logDetailSections{Description: logDetailDescription(event.Payload["body"])}
 	case pebbles.EventTypeDepAdd, pebbles.EventTypeDepRemove:
 		var lines []string
 		if dependsOn := event.Payload["depends_on"]; dependsOn != "" {
@@ -435,11 +437,19 @@ func logEventDetailLines(event pebbles.Event) []string {
 				lines = append(lines, fmt.Sprintf("dep_type=%s", normalized))
 			}
 		}
-		return lines
+		return logDetailSections{Lines: lines}
 	default:
-		return formatPayloadLines(event.Payload)
+		return logDetailSections{Lines: formatPayloadLines(event.Payload)}
 	}
-	return nil
+	return logDetailSections{}
+}
+
+// logDetailDescription normalizes description/body text for log rendering.
+func logDetailDescription(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return ""
+	}
+	return value
 }
 
 // formatPriority normalizes priority payload values as P0-P4 when possible.
@@ -459,7 +469,7 @@ func formatPayloadLines(payload map[string]string) []string {
 	keys := orderedPayloadKeys(payload)
 	lines := make([]string, 0, len(keys))
 	for _, key := range keys {
-		lines = append(lines, fmt.Sprintf("%s=%s", key, formatLogDetailValue(key, payload[key])))
+		lines = append(lines, fmt.Sprintf("%s=%s", key, formatPayloadValue(key, payload[key])))
 	}
 	return lines
 }
@@ -510,14 +520,6 @@ func formatPayloadValue(key, value string) string {
 		return strconv.Quote(value)
 	}
 	return value
-}
-
-// formatLogDetailValue preserves markdown bodies while keeping payload formatting for other fields.
-func formatLogDetailValue(key, value string) string {
-	if key == "description" || key == "body" {
-		return value
-	}
-	return formatPayloadValue(key, value)
 }
 
 // logEventTypeColor returns the ANSI color for a log event label.
@@ -571,8 +573,6 @@ func renderLogDetail(detail string) string {
 func renderLogDetailValue(key, value string) string {
 	// Use existing list/show color rules for known detail values.
 	switch key {
-	case "description", "body":
-		return renderLogMarkdownValue(value)
 	case "status":
 		return renderStatusValue(value)
 	case "priority":
@@ -590,19 +590,6 @@ func renderLogDetailValue(key, value string) string {
 	}
 }
 
-// renderLogMarkdownValue renders markdown and indents wrapped lines for details output.
-func renderLogMarkdownValue(value string) string {
-	rendered := strings.TrimRight(renderMarkdown(value), "\n")
-	lines := strings.Split(rendered, "\n")
-	if len(lines) <= 1 {
-		return rendered
-	}
-	for i := 1; i < len(lines); i++ {
-		lines[i] = "    " + lines[i]
-	}
-	return strings.Join(lines, "\n")
-}
-
 // formatPrettyLog renders a multi-line log entry for humans.
 func formatPrettyLog(entry logEntry, line logLine) string {
 	var output strings.Builder
@@ -613,17 +600,33 @@ func formatPrettyLog(entry logEntry, line logLine) string {
 	output.WriteString(fmt.Sprintf("%s  %s\n", renderLogLabel("When:"), line.EventTime))
 	output.WriteString(fmt.Sprintf("%s %s (%s)\n", renderLogLabel("Actor:"), line.Actor, line.ActorDate))
 	// Render payload details with indentation or an explicit none marker.
-	details := logEventDetailLines(entry.Entry.Event)
-	if len(details) == 0 {
+	details := logEventDetailSections(entry.Entry.Event)
+	if len(details.Lines) == 0 && details.Description == "" {
 		output.WriteString(fmt.Sprintf("%s %s", renderLogLabel("Details:"), renderLogLabel("(none)")))
 		return output.String()
 	}
 	output.WriteString(fmt.Sprintf("%s\n", renderLogLabel("Details:")))
-	for index, detail := range details {
+	for index, detail := range details.Lines {
 		output.WriteString("  ")
 		output.WriteString(renderLogDetail(detail))
-		if index < len(details)-1 {
+		if index < len(details.Lines)-1 {
 			output.WriteString("\n")
+		}
+	}
+	if details.Description != "" {
+		if len(details.Lines) > 0 {
+			output.WriteString("\n\n")
+		} else {
+			output.WriteString("\n")
+		}
+		rendered := renderMarkdown(details.Description)
+		descriptionLines := strings.Split(rendered, "\n")
+		for index, line := range descriptionLines {
+			output.WriteString("  ")
+			output.WriteString(line)
+			if index < len(descriptionLines)-1 {
+				output.WriteString("\n")
+			}
 		}
 	}
 	return output.String()
