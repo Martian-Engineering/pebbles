@@ -124,11 +124,19 @@ depth) with the line format:
 ○ pb-abc [● P2] [task] - Title
 ```
 
+Stale output includes the last activity date:
+
+```
+○ pb-abc [● P2] [task] [2024-01-01] - Title
+```
+
 Filtering flags (comma-separated, case-insensitive):
 
 - `--status`: `open`, `in_progress`, `closed` (hyphens are accepted, e.g. `in-progress`)
 - `--type`: issue type values like `task` or `epic`
 - `--priority`: `P0`-`P4` (or `0`-`4`)
+- `--stale`: show open issues with no activity for N days
+- `--stale-days`: override the stale threshold (default 30)
 
 Examples:
 
@@ -136,6 +144,8 @@ Examples:
 pb list --status open
 pb list --status open,in_progress --type task
 pb list --priority P0,P1
+pb list --stale
+pb list --stale --stale-days 60
 ```
 ## Styling
 
