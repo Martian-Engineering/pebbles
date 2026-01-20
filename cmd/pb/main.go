@@ -159,6 +159,8 @@ func runList(root string, args []string) {
 	status := fs.String("status", "", "Filter by status (comma-separated)")
 	issueType := fs.String("type", "", "Filter by issue type (comma-separated)")
 	priority := fs.String("priority", "", "Filter by priority (P0-P4, comma-separated)")
+	stale := fs.Bool("stale", false, "Show stale issues (open with no activity for N days)")
+	staleDays := fs.Int("stale-days", 30, "Days without activity to mark an issue stale")
 	_ = fs.Parse(args)
 	// Validate the project and requested filters before listing.
 	if err := ensureProject(root); err != nil {
@@ -171,6 +173,42 @@ func runList(root string, args []string) {
 	issues, err := pebbles.ListIssueHierarchy(root)
 	if err != nil {
 		exitError(err)
+	}
+	if *stale {
+		if *staleDays <= 0 {
+			exitError(fmt.Errorf("stale-days must be positive"))
+		}
+		activityByID, err := pebbles.ListIssueActivity(root)
+		if err != nil {
+			exitError(err)
+		}
+		// Compare activity timestamps against a rolling day cutoff.
+		cutoff := time.Now().UTC().Add(-time.Duration(*staleDays) * 24 * time.Hour)
+		rows := make([]staleIssueRow, 0, len(issues))
+		for _, item := range issues {
+			if !filters.matches(item.Issue) {
+				continue
+			}
+			if item.Issue.Status == pebbles.StatusClosed {
+				continue
+			}
+			lastActivity, err := issueLastActivity(item.Issue, activityByID)
+			if err != nil {
+				exitError(err)
+			}
+			if lastActivity.After(cutoff) {
+				continue
+			}
+			rows = append(rows, staleIssueRow{
+				Item:     item,
+				Activity: lastActivity.Format("2006-01-02"),
+			})
+		}
+		widths := staleIssueWidthsForRows(rows)
+		for _, row := range rows {
+			fmt.Println(formatStaleIssueLine(row, widths))
+		}
+		return
 	}
 	widths := issueColumnWidthsForHierarchy(issues)
 	for _, item := range issues {
@@ -1012,6 +1050,18 @@ type issueColumnWidths struct {
 	issueType int
 }
 
+// staleIssueRow pairs a hierarchy item with its last activity display value.
+type staleIssueRow struct {
+	Item     pebbles.IssueHierarchyItem
+	Activity string
+}
+
+// staleIssueWidths stores column widths for stale list output.
+type staleIssueWidths struct {
+	issue    issueColumnWidths
+	activity int
+}
+
 // issueColumnWidthsForHierarchy computes display widths for a hierarchy list.
 func issueColumnWidthsForHierarchy(items []pebbles.IssueHierarchyItem) issueColumnWidths {
 	var widths issueColumnWidths
@@ -1026,6 +1076,16 @@ func issueColumnWidthsForIssues(issues []pebbles.Issue) issueColumnWidths {
 	var widths issueColumnWidths
 	for _, issue := range issues {
 		updateIssueColumnWidths(&widths, issue)
+	}
+	return widths
+}
+
+// staleIssueWidthsForRows computes display widths for stale list output.
+func staleIssueWidthsForRows(rows []staleIssueRow) staleIssueWidths {
+	var widths staleIssueWidths
+	for _, row := range rows {
+		updateIssueColumnWidths(&widths.issue, row.Item.Issue)
+		widths.activity = maxWidth(widths.activity, displayWidth(row.Activity))
 	}
 	return widths
 }
@@ -1103,6 +1163,47 @@ func formatIssueLine(issue pebbles.Issue, depth int, widths issueColumnWidths) s
 		padDisplay(issueType, widths.issueType),
 		issue.Title,
 	)
+}
+
+// formatStaleIssueLine renders a stale list line with a last-activity column.
+func formatStaleIssueLine(row staleIssueRow, widths staleIssueWidths) string {
+	indent := strings.Repeat("  ", row.Item.Depth)
+	statusIcon := renderStatusIcon(row.Item.Issue.Status)
+	priorityLabel := fmt.Sprintf("● %s", renderPriorityLabel(row.Item.Issue.Priority))
+	issueType := renderIssueType(row.Item.Issue.IssueType)
+	return fmt.Sprintf(
+		"%s%s %s [%s] [%s] [%s] - %s",
+		indent,
+		padDisplay(statusIcon, widths.issue.status),
+		padDisplay(row.Item.Issue.ID, widths.issue.id),
+		padDisplay(priorityLabel, widths.issue.priority),
+		padDisplay(issueType, widths.issue.issueType),
+		padDisplay(row.Activity, widths.activity),
+		row.Item.Issue.Title,
+	)
+}
+
+// issueLastActivity returns the last activity time for an issue.
+func issueLastActivity(issue pebbles.Issue, activityByID map[string]time.Time) (time.Time, error) {
+	// Prefer activity derived from the event log when available.
+	if activity, ok := activityByID[issue.ID]; ok {
+		return activity, nil
+	}
+	// Fall back to persisted timestamps when activity data is missing.
+	if issue.UpdatedAt != "" {
+		parsed, err := time.Parse(time.RFC3339Nano, issue.UpdatedAt)
+		if err == nil {
+			return parsed, nil
+		}
+	}
+	if issue.CreatedAt != "" {
+		parsed, err := time.Parse(time.RFC3339Nano, issue.CreatedAt)
+		if err != nil {
+			return time.Time{}, fmt.Errorf("parse created_at for %s: %w", issue.ID, err)
+		}
+		return parsed, nil
+	}
+	return time.Time{}, fmt.Errorf("missing activity timestamp for %s", issue.ID)
 }
 
 // formatDate renders a timestamp as YYYY-MM-DD when possible.
