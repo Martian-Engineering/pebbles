@@ -91,6 +91,7 @@ func printVersion() {
 // runInit handles pb init.
 func runInit(root string, args []string) {
 	fs := flag.NewFlagSet("init", flag.ExitOnError)
+	setFlagUsage(fs, initHelp)
 	prefix := fs.String("prefix", "", "Prefix for new issue IDs")
 	_ = fs.Parse(args)
 	prefixSet := false
@@ -112,6 +113,7 @@ func runInit(root string, args []string) {
 // runCreate handles pb create.
 func runCreate(root string, args []string) {
 	fs := flag.NewFlagSet("create", flag.ExitOnError)
+	setFlagUsage(fs, createHelp)
 	title := fs.String("title", "", "Issue title")
 	description := fs.String("description", "", "Issue description")
 	issueType := fs.String("type", "task", "Issue type")
@@ -160,6 +162,7 @@ func runCreate(root string, args []string) {
 // runList handles pb list.
 func runList(root string, args []string) {
 	fs := flag.NewFlagSet("list", flag.ExitOnError)
+	setFlagUsage(fs, listHelp)
 	status := fs.String("status", "", "Filter by status (comma-separated)")
 	issueType := fs.String("type", "", "Filter by issue type (comma-separated)")
 	priority := fs.String("priority", "", "Filter by priority (P0-P4, comma-separated)")
@@ -264,6 +267,7 @@ func runList(root string, args []string) {
 // runShow handles pb show.
 func runShow(root string, args []string) {
 	fs := flag.NewFlagSet("show", flag.ExitOnError)
+	setFlagUsage(fs, showHelp)
 	jsonOut := fs.Bool("json", false, "Output JSON")
 	_ = fs.Parse(args)
 	if err := ensureProject(root); err != nil {
@@ -315,6 +319,7 @@ func (opt *optionalString) Set(value string) error {
 // runUpdate handles pb update.
 func runUpdate(root string, args []string) {
 	fs := flag.NewFlagSet("update", flag.ExitOnError)
+	setFlagUsage(fs, updateHelp)
 	status := fs.String("status", "", "New status")
 	var issueType optionalString
 	var description optionalString
@@ -384,6 +389,7 @@ func runUpdate(root string, args []string) {
 // runClose handles pb close.
 func runClose(root string, args []string) {
 	fs := flag.NewFlagSet("close", flag.ExitOnError)
+	setFlagUsage(fs, closeHelp)
 	_ = fs.Parse(args)
 	// Validate inputs before closing the issue.
 	if err := ensureProject(root); err != nil {
@@ -410,6 +416,7 @@ func runClose(root string, args []string) {
 // runReopen handles pb reopen.
 func runReopen(root string, args []string) {
 	fs := flag.NewFlagSet("reopen", flag.ExitOnError)
+	setFlagUsage(fs, reopenHelp)
 	_ = fs.Parse(args)
 	// Validate inputs before reopening the issue.
 	if err := ensureProject(root); err != nil {
@@ -439,6 +446,7 @@ func runReopen(root string, args []string) {
 // runComment handles pb comment.
 func runComment(root string, args []string) {
 	fs := flag.NewFlagSet("comment", flag.ExitOnError)
+	setFlagUsage(fs, commentHelp)
 	body := fs.String("body", "", "Comment body")
 	_ = fs.Parse(reorderFlags(args, map[string]bool{"--body": true}))
 	// Validate inputs before appending a comment event.
@@ -468,6 +476,10 @@ func runComment(root string, args []string) {
 
 // runImport handles pb import.
 func runImport(root string, args []string) {
+	if len(args) == 0 || isHelpArg(args[0]) {
+		fmt.Print(importHelp)
+		return
+	}
 	if len(args) < 1 {
 		exitError(fmt.Errorf("usage: pb import <beads> [flags]"))
 	}
@@ -482,6 +494,7 @@ func runImport(root string, args []string) {
 // runImportBeads imports Beads issues into Pebbles.
 func runImportBeads(root string, args []string) {
 	fs := flag.NewFlagSet("import beads", flag.ExitOnError)
+	setFlagUsage(fs, importBeadsHelp)
 	from := fs.String("from", "", "Beads repo root (default: current directory)")
 	prefix := fs.String("prefix", "", "Issue prefix override")
 	includeTombstones := fs.Bool("include-tombstones", false, "Import tombstone issues")
@@ -527,6 +540,10 @@ func runImportBeads(root string, args []string) {
 
 // runDep handles pb dep commands.
 func runDep(root string, args []string) {
+	if len(args) == 0 || isHelpArg(args[0]) {
+		fmt.Print(depHelp)
+		return
+	}
 	// Validate CLI arguments for dependency creation.
 	if err := ensureProject(root); err != nil {
 		exitError(err)
@@ -539,6 +556,7 @@ func runDep(root string, args []string) {
 	switch action {
 	case "add":
 		addFlags := flag.NewFlagSet("dep add", flag.ExitOnError)
+		setFlagUsage(addFlags, depAddHelp)
 		depType := addFlags.String("type", pebbles.DepTypeBlocks, "Dependency type (blocks or parent-child)")
 		_ = addFlags.Parse(reorderFlags(args[1:], map[string]bool{"--type": true}))
 		if addFlags.NArg() != 2 {
@@ -547,6 +565,7 @@ func runDep(root string, args []string) {
 		runDepAdd(root, addFlags.Arg(0), addFlags.Arg(1), pebbles.NormalizeDepType(*depType))
 	case "rm":
 		rmFlags := flag.NewFlagSet("dep rm", flag.ExitOnError)
+		setFlagUsage(rmFlags, depRmHelp)
 		depType := rmFlags.String("type", pebbles.DepTypeBlocks, "Dependency type (blocks or parent-child)")
 		_ = rmFlags.Parse(reorderFlags(args[1:], map[string]bool{"--type": true}))
 		if rmFlags.NArg() != 2 {
@@ -554,6 +573,10 @@ func runDep(root string, args []string) {
 		}
 		runDepRemove(root, rmFlags.Arg(0), rmFlags.Arg(1), pebbles.NormalizeDepType(*depType))
 	case "tree":
+		if len(args) == 2 && isHelpArg(args[1]) {
+			fmt.Print(depTreeHelp)
+			return
+		}
 		if len(args) != 2 {
 			exitError(fmt.Errorf("usage: pb dep tree <issue>"))
 		}
@@ -630,6 +653,7 @@ func runDepTree(root, issueID string) {
 // runReady handles pb ready.
 func runReady(root string, args []string) {
 	fs := flag.NewFlagSet("ready", flag.ExitOnError)
+	setFlagUsage(fs, readyHelp)
 	jsonOut := fs.Bool("json", false, "Output JSON")
 	_ = fs.Parse(args)
 	if err := ensureProject(root); err != nil {
@@ -662,6 +686,7 @@ func runReady(root string, args []string) {
 // runPrefix handles pb prefix commands.
 func runPrefix(root string, args []string) {
 	fs := flag.NewFlagSet("prefix", flag.ExitOnError)
+	setFlagUsage(fs, prefixHelp)
 	_ = fs.Parse(args)
 	if err := ensureProject(root); err != nil {
 		exitError(err)
@@ -701,6 +726,7 @@ func runPrefixSet(root, prefix string) {
 // runRename handles pb rename.
 func runRename(root string, args []string) {
 	fs := flag.NewFlagSet("rename", flag.ExitOnError)
+	setFlagUsage(fs, renameHelp)
 	_ = fs.Parse(args)
 	if err := ensureProject(root); err != nil {
 		exitError(err)
@@ -738,6 +764,7 @@ func runRename(root string, args []string) {
 // runRenamePrefix updates IDs to a new prefix.
 func runRenamePrefix(root string, args []string) {
 	fs := flag.NewFlagSet("rename-prefix", flag.ExitOnError)
+	setFlagUsage(fs, renamePrefixHelp)
 	full := fs.Bool("full", false, "Rename all issues")
 	open := fs.Bool("open", false, "Rename only open issues")
 	_ = fs.Parse(reorderFlags(args, map[string]bool{}))
@@ -957,45 +984,7 @@ func printIssueComments(comments []pebbles.IssueComment) {
 
 // printUsage prints a brief usage message.
 func printUsage() {
-	fmt.Println("Pebbles - A minimal issue tracker with append-only event log.")
-	fmt.Println("")
-	fmt.Println("Usage:")
-	fmt.Println("  pb [command]")
-	fmt.Println("")
-	fmt.Println("Working With Issues:")
-	fmt.Println("  create      Create a new issue")
-	fmt.Println("  list        List issues")
-	fmt.Println("  show        Show issue details")
-	fmt.Println("  version     Show pb version")
-	fmt.Println("  update      Update an issue")
-	fmt.Println("  close       Close an issue")
-	fmt.Println("  reopen      Reopen a closed issue")
-	fmt.Println("  comment     Add a comment to an issue")
-	fmt.Println("  rename      Rename an issue id")
-	fmt.Println("  rename-prefix Rename issues to a new prefix (flags before prefix)")
-	fmt.Println("  ready       Show issues ready to work (no blockers)")
-	fmt.Println("  log         Show the event log (pretty view)")
-	fmt.Println("")
-	fmt.Println("Import:")
-	fmt.Println("  import beads Import issues from a Beads project")
-	fmt.Println("")
-	fmt.Println("Dependencies:")
-	fmt.Println("  dep add     Add a dependency (--type blocks|parent-child)")
-	fmt.Println("  dep rm      Remove a dependency (--type blocks|parent-child)")
-	fmt.Println("  dep tree    Show dependency tree")
-	fmt.Println("")
-	fmt.Println("Prefixes:")
-	fmt.Println("  prefix set  Update the prefix used for new ids")
-	fmt.Println("")
-	fmt.Println("Setup:")
-	fmt.Println("  init        Initialize a pebbles project")
-	fmt.Println("  init --prefix <prefix> Initialize with a custom prefix")
-	fmt.Println("  self-update Check for updates and install the latest release")
-	fmt.Println("  help        Show this help")
-	fmt.Println("")
-	fmt.Println("Styling:")
-	fmt.Println("  list/show output uses ANSI colors when stdout is a TTY.")
-	fmt.Println("  Set NO_COLOR=1 or PB_NO_COLOR=1 to disable.")
+	fmt.Print(rootHelp)
 }
 
 // listFilters holds optional filters for pb list output.

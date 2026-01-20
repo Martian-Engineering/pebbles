@@ -101,6 +101,7 @@ func enrichEvent(event pebbles.Event, descriptions map[string]string) pebbles.Ev
 // runLog handles pb log.
 func runLog(root string, args []string) {
 	fs := flag.NewFlagSet("log", flag.ExitOnError)
+	setFlagUsage(fs, logHelp)
 	var limit int
 	fs.IntVar(&limit, "limit", 0, "Limit number of events")
 	fs.IntVar(&limit, "n", 0, "Alias for --limit")
