@@ -242,3 +242,6 @@
 {"type":"close","timestamp":"2026-01-20T17:20:13.514239Z","issue_id":"pb-1f9","payload":{}}
 {"type":"create","timestamp":"2026-01-20T17:20:25.564501Z","issue_id":"pb-d01","payload":{"description":"sortEvents should apply rename events before deps/status so rebuilt caches don't fail on renamed issue IDs.","priority":"2","title":"Fix event sort order for renames","type":"bug"}}
 {"type":"close","timestamp":"2026-01-20T17:20:35.534983Z","issue_id":"pb-d01","payload":{}}
+{"type":"create","timestamp":"2026-01-20T17:38:33.756097Z","issue_id":"pb-af5","payload":{"description":"Use ldflags to set version/commit/date, update pb --version output, and document/automate the release flow.","priority":"1","title":"Add build-time version metadata and release script","type":"feature"}}
+{"type":"status_update","timestamp":"2026-01-20T17:38:41.776445Z","issue_id":"pb-af5","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-20T17:40:25.266882Z","issue_id":"pb-af5","payload":{}}

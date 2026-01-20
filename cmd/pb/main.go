@@ -12,7 +12,11 @@ import (
 	"pebbles/internal/pebbles"
 )
 
-const buildVersion = "v0.2.2"
+var (
+	buildVersion = "dev"
+	buildCommit  = "unknown"
+	buildDate    = "unknown"
+)
 
 // main dispatches pb subcommands.
 func main() {
@@ -26,7 +30,7 @@ func main() {
 		return
 	}
 	if os.Args[1] == "--version" || os.Args[1] == "-v" {
-		fmt.Println(buildVersion)
+		printVersion()
 		return
 	}
 	cmd := os.Args[1]
@@ -64,11 +68,20 @@ func main() {
 	case "help":
 		printUsage()
 	case "version":
-		fmt.Println(buildVersion)
+		printVersion()
 	default:
 		printUsage()
 		os.Exit(1)
 	}
+}
+
+// printVersion prints version metadata for the build.
+func printVersion() {
+	message := buildVersion
+	if buildCommit != "unknown" || buildDate != "unknown" {
+		message = fmt.Sprintf("%s (%s %s)", buildVersion, buildCommit, buildDate)
+	}
+	fmt.Println(message)
 }
 
 // runInit handles pb init.

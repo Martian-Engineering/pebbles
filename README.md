@@ -173,6 +173,7 @@ data is unavailable (or `--no-git` is used), they render as `unknown`.
 - Git merges are safe because events are append-only.
 - Run `pb init` in the project root before using other commands.
 - Release notes live in `CHANGELOG.md`.
+- Release flow is documented in `docs/RELEASING.md`.
 
 ## Sync Model
 
