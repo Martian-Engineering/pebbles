@@ -213,6 +213,39 @@ func TestFormatPrettyLogWithDetails(t *testing.T) {
 	}
 }
 
+// TestFormatPrettyLogWithDescription ensures descriptions are rendered last.
+func TestFormatPrettyLogWithDescription(t *testing.T) {
+	previous := colorEnabled
+	colorEnabled = false
+	defer func() {
+		colorEnabled = previous
+	}()
+
+	entry := logEntry{
+		Entry: pebbles.EventLogEntry{
+			Line:  8,
+			Event: pebbles.Event{Type: pebbles.EventTypeCreate, IssueID: "pb-4", Payload: map[string]string{"type": "feature", "priority": "2", "description": "Line one\nLine two"}},
+		},
+		ParsedTime: time.Date(2026, 1, 19, 10, 0, 0, 0, time.UTC),
+		ParsedOK:   true,
+	}
+	line := logLine{
+		Actor:      "Josh",
+		ActorDate:  "2026-01-19",
+		EventTime:  "2026-01-19 10:00:00",
+		EventType:  "create",
+		IssueID:    "pb-4",
+		IssueTitle: "Description Log",
+	}
+	output := formatPrettyLog(entry, line)
+	if strings.Contains(output, "description=") {
+		t.Fatalf("unexpected description label: %q", output)
+	}
+	if !strings.Contains(output, "Details:\n  type=feature\n  priority=P2\n\n  Line one\n  Line two") {
+		t.Fatalf("missing description formatting: %q", output)
+	}
+}
+
 // TestFormatPrettyLogNoDetails ensures empty payloads show (none).
 func TestFormatPrettyLogNoDetails(t *testing.T) {
 	previous := colorEnabled
