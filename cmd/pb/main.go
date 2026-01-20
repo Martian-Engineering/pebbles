@@ -12,6 +12,8 @@ import (
 	"pebbles/internal/pebbles"
 )
 
+const buildVersion = "v0.2.0"
+
 // main dispatches pb subcommands.
 func main() {
 	root, err := os.Getwd()
@@ -21,6 +23,10 @@ func main() {
 	// Validate the CLI entrypoint arguments before dispatching.
 	if len(os.Args) < 2 {
 		printUsage()
+		return
+	}
+	if os.Args[1] == "--version" || os.Args[1] == "-v" {
+		fmt.Println(buildVersion)
 		return
 	}
 	cmd := os.Args[1]
@@ -57,6 +63,8 @@ func main() {
 		runLog(root, args)
 	case "help":
 		printUsage()
+	case "version":
+		fmt.Println(buildVersion)
 	default:
 		printUsage()
 		os.Exit(1)
@@ -814,6 +822,7 @@ func printUsage() {
 	fmt.Println("  create      Create a new issue")
 	fmt.Println("  list        List issues")
 	fmt.Println("  show        Show issue details")
+	fmt.Println("  version     Show pb version")
 	fmt.Println("  update      Update an issue")
 	fmt.Println("  close       Close an issue")
 	fmt.Println("  comment     Add a comment to an issue")

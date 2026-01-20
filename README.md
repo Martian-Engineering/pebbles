@@ -48,6 +48,9 @@ pb list
 # Show issue details
 pb show pb-abc
 
+# Show pb version
+pb version
+
 # Update status and fields
 pb update pb-abc --status in_progress --type bug --priority P1 --description "Investigate regressions"
 
