@@ -162,6 +162,7 @@ func runList(root string, args []string) {
 	stale := fs.Bool("stale", false, "Show stale issues (open with no activity for N days)")
 	staleDays := fs.Int("stale-days", 30, "Days without activity to mark an issue stale")
 	jsonOut := fs.Bool("json", false, "Output JSON")
+	blocked := fs.Bool("blocked", false, "Show issues blocked by open dependencies")
 	_ = fs.Parse(args)
 	// Validate the project and requested filters before listing.
 	if err := ensureProject(root); err != nil {
@@ -170,6 +171,24 @@ func runList(root string, args []string) {
 	filters, err := parseListFilters(*status, *issueType, *priority)
 	if err != nil {
 		exitError(err)
+	}
+	if *blocked {
+		blockedIssues, err := pebbles.ListBlockedIssues(root)
+		if err != nil {
+			exitError(err)
+		}
+		issues := make([]pebbles.Issue, 0, len(blockedIssues))
+		for _, item := range blockedIssues {
+			issues = append(issues, item.Issue)
+		}
+		widths := issueColumnWidthsForIssues(issues)
+		for _, item := range blockedIssues {
+			if !filters.matches(item.Issue) {
+				continue
+			}
+			fmt.Println(formatBlockedIssueLine(item.Issue, item.Blockers, widths))
+		}
+		return
 	}
 	issues, err := pebbles.ListIssueHierarchy(root)
 	if err != nil {
@@ -1246,7 +1265,27 @@ func issueLastActivity(issue pebbles.Issue, activityByID map[string]time.Time) (
 	}
 	return time.Time{}, fmt.Errorf("missing activity timestamp for %s", issue.ID)
 }
+// formatBlockedIssueLine appends blocker IDs to a list output line.
+func formatBlockedIssueLine(issue pebbles.Issue, blockers []pebbles.Issue, widths issueColumnWidths) string {
+	line := formatIssueLine(issue, 0, widths)
+	blockerIDs := blockedIssueIDs(blockers)
+	if len(blockerIDs) == 0 {
+		return line
+	}
+	return fmt.Sprintf("%s (blocked by: %s)", line, strings.Join(blockerIDs, ", "))
+}
 
+// blockedIssueIDs returns a stable slice of blocker IDs.
+func blockedIssueIDs(blockers []pebbles.Issue) []string {
+	if len(blockers) == 0 {
+		return nil
+	}
+	ids := make([]string, 0, len(blockers))
+	for _, blocker := range blockers {
+		ids = append(ids, blocker.ID)
+	}
+	return ids
+}
 // formatDate renders a timestamp as YYYY-MM-DD when possible.
 func formatDate(timestamp string) string {
 	parsed, err := time.Parse(time.RFC3339Nano, timestamp)

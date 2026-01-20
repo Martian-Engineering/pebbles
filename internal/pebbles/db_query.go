@@ -213,6 +213,52 @@ func ListReadyIssues(root string) ([]Issue, error) {
 	return issues, nil
 }
 
+// ListBlockedIssues returns issues that depend on open blockers.
+func ListBlockedIssues(root string) ([]BlockedIssue, error) {
+	if err := EnsureCache(root); err != nil {
+		return nil, err
+	}
+	db, err := openDB(DBPath(root))
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = db.Close() }()
+	// Join issues against their open blocking dependencies.
+	query := `
+		SELECT
+			i.id, i.title, i.description, i.issue_type, i.status, i.priority, i.created_at, i.updated_at, i.closed_at,
+			bi.id, bi.title, bi.description, bi.issue_type, bi.status, bi.priority, bi.created_at, bi.updated_at, bi.closed_at
+		FROM issues i
+		JOIN deps d ON d.issue_id = i.id AND d.dep_type = ?
+		JOIN issues bi ON bi.id = d.depends_on_id
+		WHERE i.status != ? AND bi.status != ?
+		ORDER BY i.id, bi.id
+	`
+	rows, err := db.Query(query, DepTypeBlocks, StatusClosed, StatusClosed)
+	if err != nil {
+		return nil, fmt.Errorf("blocked issues: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var blocked []BlockedIssue
+	var current *BlockedIssue
+	// Group blockers by issue for stable output ordering.
+	for rows.Next() {
+		issue, blocker, err := scanIssuePair(rows)
+		if err != nil {
+			return nil, err
+		}
+		if current == nil || current.Issue.ID != issue.ID {
+			blocked = append(blocked, BlockedIssue{Issue: issue})
+			current = &blocked[len(blocked)-1]
+		}
+		current.Blockers = append(current.Blockers, blocker)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("blocked issues rows: %w", err)
+	}
+	return blocked, nil
+}
+
 // IssueExists reports whether an issue exists for the given ID or alias.
 func IssueExists(root, id string) (bool, error) {
 	if err := EnsureCache(root); err != nil {
@@ -248,6 +294,35 @@ func scanIssue(scanner interface{ Scan(...any) error }) (Issue, error) {
 		return Issue{}, fmt.Errorf("scan issue: %w", err)
 	}
 	return issue, nil
+}
+
+// scanIssuePair scans a row containing two Issue records.
+func scanIssuePair(scanner interface{ Scan(...any) error }) (Issue, Issue, error) {
+	var issue Issue
+	var blocker Issue
+	if err := scanner.Scan(
+		&issue.ID,
+		&issue.Title,
+		&issue.Description,
+		&issue.IssueType,
+		&issue.Status,
+		&issue.Priority,
+		&issue.CreatedAt,
+		&issue.UpdatedAt,
+		&issue.ClosedAt,
+		&blocker.ID,
+		&blocker.Title,
+		&blocker.Description,
+		&blocker.IssueType,
+		&blocker.Status,
+		&blocker.Priority,
+		&blocker.CreatedAt,
+		&blocker.UpdatedAt,
+		&blocker.ClosedAt,
+	); err != nil {
+		return Issue{}, Issue{}, fmt.Errorf("scan issue pair: %w", err)
+	}
+	return issue, blocker, nil
 }
 
 // getIssueByID fetches an issue by ID using the provided DB connection.

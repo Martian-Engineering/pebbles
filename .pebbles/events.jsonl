@@ -285,4 +285,6 @@
 {"type":"status_update","timestamp":"2026-01-20T21:24:33.812364Z","issue_id":"pb-31e","payload":{"status":"in_progress"}}
 {"type":"status_update","timestamp":"2026-01-20T21:31:15.34848Z","issue_id":"pb-31d","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-20T21:31:55.740086Z","issue_id":"pb-31d","payload":{}}
+{"type":"status_update","timestamp":"2026-01-20T21:35:00.992979Z","issue_id":"pb-791","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-20T21:35:14.725867Z","issue_id":"pb-791","payload":{}}
 {"type":"close","timestamp":"2026-01-20T21:38:22.931941Z","issue_id":"pb-31e","payload":{}}

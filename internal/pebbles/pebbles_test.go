@@ -253,6 +253,61 @@ func TestReadyList(t *testing.T) {
 	}
 }
 
+// TestBlockedList verifies dependency-based blocked filtering.
+func TestBlockedList(t *testing.T) {
+	root := t.TempDir()
+	if err := InitProject(root); err != nil {
+		t.Fatalf("init project: %v", err)
+	}
+	issueA := "pb-blocked-a"
+	issueB := "pb-blocked-b"
+	issueC := "pb-blocked-c"
+	if err := AppendEvent(root, NewCreateEvent(issueA, "Issue A", "", "task", "2024-01-02T00:01:00Z", 2)); err != nil {
+		t.Fatalf("append create A: %v", err)
+	}
+	if err := AppendEvent(root, NewCreateEvent(issueB, "Issue B", "", "task", "2024-01-02T00:01:01Z", 2)); err != nil {
+		t.Fatalf("append create B: %v", err)
+	}
+	if err := AppendEvent(root, NewCreateEvent(issueC, "Issue C", "", "task", "2024-01-02T00:01:02Z", 2)); err != nil {
+		t.Fatalf("append create C: %v", err)
+	}
+	if err := AppendEvent(root, NewDepAddEvent(issueA, issueB, DepTypeBlocks, "2024-01-02T00:01:03Z")); err != nil {
+		t.Fatalf("append dep A->B: %v", err)
+	}
+	if err := AppendEvent(root, NewDepAddEvent(issueC, issueB, DepTypeBlocks, "2024-01-02T00:01:04Z")); err != nil {
+		t.Fatalf("append dep C->B: %v", err)
+	}
+	if err := AppendEvent(root, NewCloseEvent(issueC, "2024-01-02T00:01:05Z")); err != nil {
+		t.Fatalf("append close C: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache: %v", err)
+	}
+	blocked, err := ListBlockedIssues(root)
+	if err != nil {
+		t.Fatalf("list blocked: %v", err)
+	}
+	if len(blocked) != 1 || blocked[0].Issue.ID != issueA {
+		t.Fatalf("expected %s blocked", issueA)
+	}
+	if len(blocked[0].Blockers) != 1 || blocked[0].Blockers[0].ID != issueB {
+		t.Fatalf("expected blocker %s", issueB)
+	}
+	if err := AppendEvent(root, NewCloseEvent(issueB, "2024-01-02T00:01:06Z")); err != nil {
+		t.Fatalf("append close B: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache after close: %v", err)
+	}
+	blocked, err = ListBlockedIssues(root)
+	if err != nil {
+		t.Fatalf("list blocked after close: %v", err)
+	}
+	if len(blocked) != 0 {
+		t.Fatalf("expected no blocked issues after close")
+	}
+}
+
 // TestDependencyTree verifies dependency tree construction.
 func TestDependencyTree(t *testing.T) {
 	root := t.TempDir()

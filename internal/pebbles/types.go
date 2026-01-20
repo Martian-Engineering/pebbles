@@ -36,6 +36,12 @@ type IssueHierarchyItem struct {
 	Depth int
 }
 
+// BlockedIssue represents an issue and its open blockers.
+type BlockedIssue struct {
+	Issue    Issue
+	Blockers []Issue
+}
+
 // Config stores per-project Pebbles settings.
 type Config struct {
 	Prefix string `json:"prefix"`
