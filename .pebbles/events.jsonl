@@ -295,3 +295,31 @@
 {"type":"create","timestamp":"2026-01-20T20:05:07.781142Z","issue_id":"pb-791","payload":{"description":"Implement pb blocked to list open issues with unresolved blocking deps.","priority":"3","title":"Add blocked issues query","type":"feature"}}
 {"type":"create","timestamp":"2026-01-20T20:05:16.61554Z","issue_id":"pb-546","payload":{"description":"Implement pb stale --days N to list open issues not updated recently.","priority":"3","title":"Add stale issues query","type":"feature"}}
 {"type":"create","timestamp":"2026-01-20T20:05:24.5278Z","issue_id":"pb-882","payload":{"description":"Implement pb upgrade to download/install latest release (similar to install.sh) and replace the binary.","priority":"2","title":"Add self-update command","type":"feature"}}
+{"type":"create","timestamp":"2026-01-20T20:22:10.420535Z","issue_id":"pb-cf0","payload":{"description":"Audit all pb commands with help output and make usage text verbose (document valid statuses/types, examples, and flag semantics).","priority":"2","title":"Improve CLI help text","type":"epic"}}
+{"type":"create","timestamp":"2026-01-20T20:22:19.446425Z","issue_id":"pb-e6f","payload":{"description":"Expand pb list -h to document status values (open/in_progress/closed), type conventions (task/bug/feature/epic/chore), priority range, and examples.","priority":"2","title":"Help text: list filters","type":"task"}}
+{"type":"create","timestamp":"2026-01-20T20:22:27.583125Z","issue_id":"pb-9f8","payload":{"description":"Expand pb create -h to clarify required title, type conventions, priority range, description usage, and examples.","priority":"3","title":"Help text: create flags","type":"task"}}
+{"type":"create","timestamp":"2026-01-20T20:22:36.50435Z","issue_id":"pb-9ae","payload":{"description":"Expand pb update -h to list valid status values, type conventions, priority range, and examples showing multiple fields.","priority":"2","title":"Help text: update flags","type":"task"}}
+{"type":"create","timestamp":"2026-01-20T20:22:48.73827Z","issue_id":"pb-d72","payload":{"description":"Improve pb comment -h with required --body, usage examples, and note about multi-line bodies.","priority":"3","title":"Help text: comment command","type":"task"}}
+{"type":"create","timestamp":"2026-01-20T20:22:59.175103Z","issue_id":"pb-598","payload":{"description":"Expand pb dep help/usage to document dep types (blocks, parent-child), parent-child renaming (.N suffix), and examples.","priority":"2","title":"Help text: dep add/rm/tree","type":"task"}}
+{"type":"create","timestamp":"2026-01-20T20:23:08.125124Z","issue_id":"pb-b5f","payload":{"description":"Improve pb import beads -h with flag explanations, default behaviors, and safety notes (--backup/--force, tombstones).","priority":"2","title":"Help text: import beads","type":"task"}}
+{"type":"create","timestamp":"2026-01-20T20:23:17.608298Z","issue_id":"pb-c33","payload":{"description":"Improve help text for pb prefix set, rename, and rename-prefix (flag ordering, open/full behavior, examples).","priority":"3","title":"Help text: prefix/rename commands","type":"task"}}
+{"type":"create","timestamp":"2026-01-20T20:23:27.448686Z","issue_id":"pb-47f","payload":{"description":"Expand pb log -h to document output modes, filters, pager behavior, and event types.","priority":"3","title":"Help text: log command","type":"task"}}
+{"type":"create","timestamp":"2026-01-20T20:23:35.885515Z","issue_id":"pb-c6d","payload":{"description":"Expand pb help output to include all commands and short notes about key flags/behaviors.","priority":"3","title":"Help text: top-level pb help","type":"task"}}
+{"type":"rename","timestamp":"2026-01-20T20:23:43.696206Z","issue_id":"pb-e6f","payload":{"new_id":"pb-cf0.1"}}
+{"type":"dep_add","timestamp":"2026-01-20T20:23:43.696211Z","issue_id":"pb-cf0.1","payload":{"dep_type":"parent-child","depends_on":"pb-cf0"}}
+{"type":"rename","timestamp":"2026-01-20T20:23:52.233043Z","issue_id":"pb-9f8","payload":{"new_id":"pb-cf0.2"}}
+{"type":"dep_add","timestamp":"2026-01-20T20:23:52.233049Z","issue_id":"pb-cf0.2","payload":{"dep_type":"parent-child","depends_on":"pb-cf0"}}
+{"type":"rename","timestamp":"2026-01-20T20:24:01.531525Z","issue_id":"pb-9ae","payload":{"new_id":"pb-cf0.3"}}
+{"type":"dep_add","timestamp":"2026-01-20T20:24:01.53153Z","issue_id":"pb-cf0.3","payload":{"dep_type":"parent-child","depends_on":"pb-cf0"}}
+{"type":"rename","timestamp":"2026-01-20T20:24:09.858638Z","issue_id":"pb-d72","payload":{"new_id":"pb-cf0.4"}}
+{"type":"dep_add","timestamp":"2026-01-20T20:24:09.858643Z","issue_id":"pb-cf0.4","payload":{"dep_type":"parent-child","depends_on":"pb-cf0"}}
+{"type":"rename","timestamp":"2026-01-20T20:24:17.645334Z","issue_id":"pb-598","payload":{"new_id":"pb-cf0.5"}}
+{"type":"dep_add","timestamp":"2026-01-20T20:24:17.64534Z","issue_id":"pb-cf0.5","payload":{"dep_type":"parent-child","depends_on":"pb-cf0"}}
+{"type":"rename","timestamp":"2026-01-20T20:24:25.530628Z","issue_id":"pb-b5f","payload":{"new_id":"pb-cf0.6"}}
+{"type":"dep_add","timestamp":"2026-01-20T20:24:25.530634Z","issue_id":"pb-cf0.6","payload":{"dep_type":"parent-child","depends_on":"pb-cf0"}}
+{"type":"rename","timestamp":"2026-01-20T20:24:32.499102Z","issue_id":"pb-c33","payload":{"new_id":"pb-cf0.7"}}
+{"type":"dep_add","timestamp":"2026-01-20T20:24:32.499108Z","issue_id":"pb-cf0.7","payload":{"dep_type":"parent-child","depends_on":"pb-cf0"}}
+{"type":"rename","timestamp":"2026-01-20T20:24:40.64314Z","issue_id":"pb-47f","payload":{"new_id":"pb-cf0.8"}}
+{"type":"dep_add","timestamp":"2026-01-20T20:24:40.643146Z","issue_id":"pb-cf0.8","payload":{"dep_type":"parent-child","depends_on":"pb-cf0"}}
+{"type":"rename","timestamp":"2026-01-20T20:24:51.101674Z","issue_id":"pb-c6d","payload":{"new_id":"pb-cf0.9"}}
+{"type":"dep_add","timestamp":"2026-01-20T20:24:51.101679Z","issue_id":"pb-cf0.9","payload":{"dep_type":"parent-child","depends_on":"pb-cf0"}}
