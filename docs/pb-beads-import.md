@@ -30,7 +30,7 @@ pb import beads [--from <repo>] [--prefix <prefix>] [--include-tombstones]
 
 - `--from`: repo root (default: current directory).
 - `--prefix`: override prefix detection for `.pebbles/config.json`.
-- `--include-tombstones`: import deleted issues (default: on).
+- `--include-tombstones`: import deleted issues (default: off).
 - `--dry-run`: no writes, only a summary and warnings.
 - `--backup`: move existing `.pebbles` to `.pebbles.backup-<timestamp>`.
 - `--force`: allow overwrite without backup (discouraged).
@@ -58,7 +58,8 @@ Beads status -> Pebbles events:
 - `open`: no status update (default in Pebbles).
 - `in_progress`: add `status_update` at `updated_at`.
 - `closed`: add `close` at `closed_at` if present, else `updated_at`.
-- `tombstone`: add `close` at `deleted_at` if present, else `updated_at`.
+- `tombstone`: skip issue unless `--include-tombstones` is set; when included,
+  add `close` at `deleted_at` if present, else `updated_at`.
 
 If `close_reason` or `delete_reason` is set, add a `comment` event at the same
 timestamp with a body like:
@@ -116,6 +117,7 @@ If multiple events share the same timestamp, keep a stable order:
 ### Validation and Warnings
 
 - If any dependency references a missing issue, warn and skip the dep.
+- If a dependency references a skipped tombstone, warn and skip the dep.
 - If a priority is outside 0-4, clamp and warn.
 - If a timestamp is missing, fall back to `updated_at`, then `created_at`,
   then `now()`.
@@ -126,7 +128,8 @@ If multiple events share the same timestamp, keep a stable order:
 1. `pb import beads --dry-run`
 2. Review summary (counts, warnings, prefixes).
 3. `pb import beads --backup` (or `--force`).
-4. Run `pb list` and `pb ready` to verify.
+4. Optionally re-run with `--include-tombstones` if you want deleted issues.
+5. Run `pb list` and `pb ready` to verify.
 
 ## Repo Checks
 
@@ -140,8 +143,8 @@ If multiple events share the same timestamp, keep a stable order:
 - Comments: present (example comment fields: author, text, created_at)
 - Prefix: `cic`
 
-Implications: tombstone handling and comments are required. No parent-child
-edges here.
+Implications: many tombstones, so default import skips most issues unless
+`--include-tombstones` is used. No parent-child edges here.
 
 ### /Users/phaedrus/Projects/luckystrike/connected-play
 
@@ -155,13 +158,15 @@ edges here.
 - IDs with dot suffixes (examples): `cp-4use.7`, `cp-xrpr.3`
 
 Implications: parent-child deps must be preserved without renaming, and unknown
-dependency types (relates-to) must be skipped or annotated.
+dependency types (relates-to) must be skipped or annotated. Many tombstones are
+skipped by default.
 
 ## Limitations
 
 - Beads does not expose full event history in issues.jsonl; import is a
   reconstruction from current state only.
-- Pebbles has no deleted status, so tombstones become closed issues.
+- Pebbles has no deleted status, so included tombstones become closed issues.
+- Tombstones are skipped by default unless `--include-tombstones` is set.
 - Comment authors are stored in the comment body.
 - Unknown dependency types are skipped (reported as warnings).
 - Prefixes are single-valued in Pebbles; multi-prefix Beads repos need manual
