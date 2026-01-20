@@ -95,6 +95,38 @@ func TestCreateUpdateClose(t *testing.T) {
 	}
 }
 
+// TestReopenClearsClosedAt ensures reopening clears the close timestamp.
+func TestReopenClearsClosedAt(t *testing.T) {
+	root := t.TempDir()
+	if err := InitProject(root); err != nil {
+		t.Fatalf("init project: %v", err)
+	}
+	issueID := "pb-reopen"
+	// Create and close the issue before reopening.
+	if err := AppendEvent(root, NewCreateEvent(issueID, "Reopen", "", "task", "2024-01-01T00:00:00Z", 2)); err != nil {
+		t.Fatalf("append create: %v", err)
+	}
+	if err := AppendEvent(root, NewCloseEvent(issueID, "2024-01-01T01:00:00Z")); err != nil {
+		t.Fatalf("append close: %v", err)
+	}
+	if err := AppendEvent(root, NewStatusEvent(issueID, StatusOpen, "2024-01-01T02:00:00Z")); err != nil {
+		t.Fatalf("append reopen status: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache: %v", err)
+	}
+	issue, _, err := GetIssue(root, issueID)
+	if err != nil {
+		t.Fatalf("get issue after reopen: %v", err)
+	}
+	if issue.Status != StatusOpen {
+		t.Fatalf("expected status open, got %s", issue.Status)
+	}
+	if issue.ClosedAt != "" {
+		t.Fatalf("expected closed_at to be cleared")
+	}
+}
+
 // TestListIssueComments verifies comment events are collected by issue.
 func TestListIssueComments(t *testing.T) {
 	root := t.TempDir()

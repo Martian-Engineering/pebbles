@@ -49,6 +49,8 @@ func main() {
 		runUpdate(root, args)
 	case "close":
 		runClose(root, args)
+	case "reopen":
+		runReopen(root, args)
 	case "comment":
 		runComment(root, args)
 	case "import":
@@ -312,6 +314,35 @@ func runClose(root string, args []string) {
 	}
 	event := pebbles.NewCloseEvent(id, pebbles.NowTimestamp())
 	// Append the close event and rebuild the cache.
+	if err := pebbles.AppendEvent(root, event); err != nil {
+		exitError(err)
+	}
+	if err := pebbles.RebuildCache(root); err != nil {
+		exitError(err)
+	}
+}
+
+// runReopen handles pb reopen.
+func runReopen(root string, args []string) {
+	fs := flag.NewFlagSet("reopen", flag.ExitOnError)
+	_ = fs.Parse(args)
+	// Validate inputs before reopening the issue.
+	if err := ensureProject(root); err != nil {
+		exitError(err)
+	}
+	if fs.NArg() != 1 {
+		exitError(fmt.Errorf("reopen requires issue id"))
+	}
+	id := fs.Arg(0)
+	issue, _, err := pebbles.GetIssue(root, id)
+	if err != nil {
+		exitError(err)
+	}
+	if issue.Status != pebbles.StatusClosed {
+		exitError(fmt.Errorf("issue is already open"))
+	}
+	event := pebbles.NewStatusEvent(id, pebbles.StatusOpen, pebbles.NowTimestamp())
+	// Append the status event and rebuild the cache.
 	if err := pebbles.AppendEvent(root, event); err != nil {
 		exitError(err)
 	}
@@ -838,6 +869,7 @@ func printUsage() {
 	fmt.Println("  version     Show pb version")
 	fmt.Println("  update      Update an issue")
 	fmt.Println("  close       Close an issue")
+	fmt.Println("  reopen      Reopen a closed issue")
 	fmt.Println("  comment     Add a comment to an issue")
 	fmt.Println("  rename      Rename an issue id")
 	fmt.Println("  rename-prefix Rename issues to a new prefix (flags before prefix)")

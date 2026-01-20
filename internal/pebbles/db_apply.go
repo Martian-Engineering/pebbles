@@ -225,13 +225,26 @@ func applyStatus(db *sql.DB, event Event) error {
 	if status == "" {
 		return fmt.Errorf("status event missing status")
 	}
-	// Apply the status update and touch updated_at.
-	result, err := db.Exec(
-		"UPDATE issues SET status = ?, updated_at = ? WHERE id = ?",
-		status,
-		event.Timestamp,
-		event.IssueID,
-	)
+	var result sql.Result
+	var err error
+	if status == StatusClosed {
+		// Apply the status update and touch updated_at.
+		result, err = db.Exec(
+			"UPDATE issues SET status = ?, updated_at = ? WHERE id = ?",
+			status,
+			event.Timestamp,
+			event.IssueID,
+		)
+	} else {
+		// Reopening clears closed_at while updating status/updated_at.
+		result, err = db.Exec(
+			"UPDATE issues SET status = ?, updated_at = ?, closed_at = ? WHERE id = ?",
+			status,
+			event.Timestamp,
+			"",
+			event.IssueID,
+		)
+	}
 	if err != nil {
 		return fmt.Errorf("update status: %w", err)
 	}
