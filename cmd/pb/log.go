@@ -397,7 +397,7 @@ func logEventDetailLines(event pebbles.Event) []string {
 			lines = append(lines, fmt.Sprintf("priority=%s", formatPriority(priority)))
 		}
 		if description := event.Payload["description"]; description != "" {
-			lines = append(lines, fmt.Sprintf("description=%s", formatPayloadValue("description", description)))
+			lines = append(lines, fmt.Sprintf("description=%s", formatLogDetailValue("description", description)))
 		}
 		return lines
 	case pebbles.EventTypeStatus:
@@ -413,16 +413,16 @@ func logEventDetailLines(event pebbles.Event) []string {
 			lines = append(lines, fmt.Sprintf("priority=%s", formatPriority(priority)))
 		}
 		if description := event.Payload["description"]; description != "" {
-			lines = append(lines, fmt.Sprintf("description=%s", formatPayloadValue("description", description)))
+			lines = append(lines, fmt.Sprintf("description=%s", formatLogDetailValue("description", description)))
 		}
 		return lines
 	case pebbles.EventTypeClose:
 		if description := event.Payload["description"]; description != "" {
-			return []string{fmt.Sprintf("description=%s", formatPayloadValue("description", description))}
+			return []string{fmt.Sprintf("description=%s", formatLogDetailValue("description", description))}
 		}
 	case pebbles.EventTypeComment:
 		if body := event.Payload["body"]; body != "" {
-			return []string{fmt.Sprintf("body=%s", formatPayloadValue("body", body))}
+			return []string{fmt.Sprintf("body=%s", formatLogDetailValue("body", body))}
 		}
 	case pebbles.EventTypeDepAdd, pebbles.EventTypeDepRemove:
 		var lines []string
@@ -459,7 +459,7 @@ func formatPayloadLines(payload map[string]string) []string {
 	keys := orderedPayloadKeys(payload)
 	lines := make([]string, 0, len(keys))
 	for _, key := range keys {
-		lines = append(lines, fmt.Sprintf("%s=%s", key, formatPayloadValue(key, payload[key])))
+		lines = append(lines, fmt.Sprintf("%s=%s", key, formatLogDetailValue(key, payload[key])))
 	}
 	return lines
 }
@@ -510,6 +510,14 @@ func formatPayloadValue(key, value string) string {
 		return strconv.Quote(value)
 	}
 	return value
+}
+
+// formatLogDetailValue preserves markdown bodies while keeping payload formatting for other fields.
+func formatLogDetailValue(key, value string) string {
+	if key == "description" || key == "body" {
+		return value
+	}
+	return formatPayloadValue(key, value)
 }
 
 // logEventTypeColor returns the ANSI color for a log event label.
@@ -563,6 +571,8 @@ func renderLogDetail(detail string) string {
 func renderLogDetailValue(key, value string) string {
 	// Use existing list/show color rules for known detail values.
 	switch key {
+	case "description", "body":
+		return renderLogMarkdownValue(value)
 	case "status":
 		return renderStatusValue(value)
 	case "priority":
@@ -578,6 +588,19 @@ func renderLogDetailValue(key, value string) string {
 	default:
 		return value
 	}
+}
+
+// renderLogMarkdownValue renders markdown and indents wrapped lines for details output.
+func renderLogMarkdownValue(value string) string {
+	rendered := strings.TrimRight(renderMarkdown(value), "\n")
+	lines := strings.Split(rendered, "\n")
+	if len(lines) <= 1 {
+		return rendered
+	}
+	for i := 1; i < len(lines); i++ {
+		lines[i] = "    " + lines[i]
+	}
+	return strings.Join(lines, "\n")
 }
 
 // formatPrettyLog renders a multi-line log entry for humans.
