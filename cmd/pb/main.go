@@ -65,6 +65,8 @@ func main() {
 		runRenamePrefix(root, args)
 	case "log":
 		runLog(root, args)
+	case "self-update":
+		runSelfUpdate(root, args)
 	case "help":
 		printUsage()
 	case "version":
@@ -956,6 +958,7 @@ func printUsage() {
 	fmt.Println("Setup:")
 	fmt.Println("  init        Initialize a pebbles project")
 	fmt.Println("  init --prefix <prefix> Initialize with a custom prefix")
+	fmt.Println("  self-update Check for updates and install the latest release")
 	fmt.Println("  help        Show this help")
 	fmt.Println("")
 	fmt.Println("Styling:")
