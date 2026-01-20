@@ -23,6 +23,7 @@ const (
 	ansiBrightBlue    = "\x1b[94m"
 	ansiBrightMagenta = "\x1b[95m"
 	ansiBrightCyan    = "\x1b[96m"
+	ansiBrightWhite   = "\x1b[97m"
 )
 
 var colorEnabled = shouldColor()
@@ -54,7 +55,7 @@ func statusColor(status string) string {
 	case pebbles.StatusClosed:
 		return ansiBrightGreen
 	default:
-		return ""
+		return ansiBrightWhite
 	}
 }
 
@@ -65,15 +66,15 @@ func priorityColor(priority int) string {
 	case 0:
 		return ansiBold + ansiBrightRed
 	case 1:
-		return ansiBrightYellow
+		return ansiBrightMagenta
 	case 2:
-		return ansiYellow
+		return ansiBrightYellow
 	case 3:
 		return ansiBrightBlue
 	case 4:
-		return ansiDim + ansiGray
+		return ansiBrightCyan
 	default:
-		return ""
+		return ansiBrightWhite
 	}
 }
 
@@ -82,15 +83,15 @@ func typeColor(issueType string) string {
 	// Highlight issue types that carry extra urgency or scope.
 	switch strings.ToLower(issueType) {
 	case "bug":
-		return ansiRed
+		return ansiBrightRed
 	case "epic":
 		return ansiBrightMagenta
 	case "feature":
-		return ansiBlue
+		return ansiBrightBlue
 	case "chore":
-		return ansiDim + ansiGray
+		return ansiBrightCyan
 	default:
-		return ""
+		return ansiBrightWhite
 	}
 }
 
