@@ -14,6 +14,11 @@ The format is based on Keep a Changelog, and this project follows SemVer.
 
 ### Fixed
 
+## [0.3.0] - 2026-01-20
+
+### Fixed
+- Rebuild cache ordering now applies rename events before dependency/status replay.
+
 ## [0.2.0] - 2026-01-19
 
 ### Added
