@@ -1,6 +1,25 @@
 # Pebbles
 
-Pebbles is a minimal, git-friendly issue tracker that uses an append-only event log.
+`pebbles` is a minimalistic version of the popular [`beads`](https://github.com/steveyegge/beads) tool. Like `beads`, it provides a persistent, in-repo, structured memory for coding agents.
+
+## Rationale
+
+I was an early adopter of `beads`. The core workflow worked great:
+
+* Come up with a plan through discussion with an agent
+* Translate that into self-contained issues
+* Use issues as context for getting work done
+* Capture new requirements, bugs, features, as they arise
+
+`beads` removed the friction of having to figure out where to log work for agents to pick up by providing a structured, local, simple interface.
+
+Over time that simple interface grew increasingly complex, and that complexity leaked through to the user experience.
+
+It seemed that with each release there was another state tracking file in the .beads directory. Daemon mode was introduced. Syncing needed to happen on a different branch lest the main branch be polluted with beads commits. The `bd doctor --fix` command needed to be run constantly to fix issues (it rarely worked, if ever). There was always an untracked `issues.jsonl` file causing merge conflicts. I found myself constantly fighting with `beads` when I wanted to be doing real work.
+
+Much of this likely had to do with Steve Yegge's vision for Gas Town. `beads` kept growing new features — a likely source of the above complexity — and not only did I have no use for them, they make made my experience significantly worse. 
+
+Hence, `pebbles`: it's like `beads`, but with fewer features and a simpler architecture.
 
 ## Architecture
 
@@ -9,13 +28,15 @@ Pebbles is a minimal, git-friendly issue tracker that uses an append-only event 
 - Deterministic IDs: project prefix + hash of title + timestamp + host (3-char suffix by default; expands on collision)
 - Parent-child IDs: child issues linked via parent-child deps are renamed to `<parent>.<N>` using the first available suffix
 
+The `events.jsonl` event log is the key differentiator from beads. Instead of having the SQLite database be primary with the option to export to `issues.jsonl` for git, we invert that: `events.jsonl` is the primary data source. Every change results in a complete reconstruction of the SQLite database, which is simply a cache for easy querying.
+
 ## Install
 
 ```bash
 # Install latest
 curl -fsSL https://raw.githubusercontent.com/Martian-Engineering/pebbles/master/scripts/install.sh | sh
 # Install a specific version
-PB_VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/Martian-Engineering/pebbles/master/scripts/install.sh | sh
+PB_VERSION=vX.Y.Z curl -fsSL https://raw.githubusercontent.com/Martian-Engineering/pebbles/master/scripts/install.sh | sh
 # Install to a custom directory
 PB_INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/Martian-Engineering/pebbles/master/scripts/install.sh | sh
 ```
