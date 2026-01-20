@@ -247,6 +247,7 @@
 {"type":"close","timestamp":"2026-01-20T17:40:25.266882Z","issue_id":"pb-af5","payload":{}}
 {"type":"create","timestamp":"2026-01-20T19:17:24.152473Z","issue_id":"pb-1ce","payload":{"description":"Update AGENTS.md and CLAUDE.md to use parent-child dep syntax for epic/subtask relationships.","priority":"3","title":"Align AGENTS/CLAUDE with parent-child deps","type":"task"}}
 {"type":"close","timestamp":"2026-01-20T19:17:31.841836Z","issue_id":"pb-1ce","payload":{}}
+<<<<<<< HEAD
 {"type":"create","timestamp":"2026-01-20T20:04:49.43212Z","issue_id":"pb-31d","payload":{"description":"Support --json on key read commands so agents can parse structured output.","priority":"2","title":"Add JSON output for list/show/ready","type":"feature"}}
 {"type":"create","timestamp":"2026-01-20T20:04:57.878395Z","issue_id":"pb-9a0","payload":{"description":"Allow reopening closed issues via pb reopen \u003cid\u003e (status -\u003e open, clear closed_at).","priority":"2","title":"Add reopen command","type":"feature"}}
 {"type":"create","timestamp":"2026-01-20T20:05:07.781142Z","issue_id":"pb-791","payload":{"description":"Implement pb blocked to list open issues with unresolved blocking deps.","priority":"3","title":"Add blocked issues query","type":"feature"}}
@@ -289,3 +290,8 @@
 {"type":"status_update","timestamp":"2026-01-21T03:33:42.687241Z","issue_id":"pb-b32","payload":{"status":"open"}}
 {"type":"status_update","timestamp":"2026-01-21T03:33:45.529195Z","issue_id":"pb-b32","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-21T03:38:46.283819Z","issue_id":"pb-b32","payload":{}}
+{"type":"create","timestamp":"2026-01-20T20:04:49.43212Z","issue_id":"pb-31d","payload":{"description":"Support --json on key read commands so agents can parse structured output.","priority":"2","title":"Add JSON output for list/show/ready","type":"feature"}}
+{"type":"create","timestamp":"2026-01-20T20:04:57.878395Z","issue_id":"pb-9a0","payload":{"description":"Allow reopening closed issues via pb reopen \u003cid\u003e (status -\u003e open, clear closed_at).","priority":"2","title":"Add reopen command","type":"feature"}}
+{"type":"create","timestamp":"2026-01-20T20:05:07.781142Z","issue_id":"pb-791","payload":{"description":"Implement pb blocked to list open issues with unresolved blocking deps.","priority":"3","title":"Add blocked issues query","type":"feature"}}
+{"type":"create","timestamp":"2026-01-20T20:05:16.61554Z","issue_id":"pb-546","payload":{"description":"Implement pb stale --days N to list open issues not updated recently.","priority":"3","title":"Add stale issues query","type":"feature"}}
+{"type":"create","timestamp":"2026-01-20T20:05:24.5278Z","issue_id":"pb-882","payload":{"description":"Implement pb upgrade to download/install latest release (similar to install.sh) and replace the binary.","priority":"2","title":"Add self-update command","type":"feature"}}
