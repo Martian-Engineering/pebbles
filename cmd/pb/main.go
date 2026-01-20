@@ -161,6 +161,7 @@ func runList(root string, args []string) {
 	priority := fs.String("priority", "", "Filter by priority (P0-P4, comma-separated)")
 	stale := fs.Bool("stale", false, "Show stale issues (open with no activity for N days)")
 	staleDays := fs.Int("stale-days", 30, "Days without activity to mark an issue stale")
+	jsonOut := fs.Bool("json", false, "Output JSON")
 	_ = fs.Parse(args)
 	// Validate the project and requested filters before listing.
 	if err := ensureProject(root); err != nil {
@@ -210,6 +211,24 @@ func runList(root string, args []string) {
 		}
 		return
 	}
+	// JSON output skips column formatting and writes a single payload.
+	if *jsonOut {
+		entries := make([]issueJSON, 0, len(issues))
+		for _, item := range issues {
+			if !filters.matches(item.Issue) {
+				continue
+			}
+			entry, err := issueJSONWithDeps(root, item.Issue)
+			if err != nil {
+				exitError(err)
+			}
+			entries = append(entries, entry)
+		}
+		if err := printJSON(entries); err != nil {
+			exitError(err)
+		}
+		return
+	}
 	widths := issueColumnWidthsForHierarchy(issues)
 	for _, item := range issues {
 		if !filters.matches(item.Issue) {
@@ -222,6 +241,7 @@ func runList(root string, args []string) {
 // runShow handles pb show.
 func runShow(root string, args []string) {
 	fs := flag.NewFlagSet("show", flag.ExitOnError)
+	jsonOut := fs.Bool("json", false, "Output JSON")
 	_ = fs.Parse(args)
 	if err := ensureProject(root); err != nil {
 		exitError(err)
@@ -238,6 +258,12 @@ func runShow(root string, args []string) {
 	comments, err := pebbles.ListIssueComments(root, id)
 	if err != nil {
 		exitError(err)
+	}
+	if *jsonOut {
+		if err := printJSON(buildIssueDetailJSON(issue, deps, comments)); err != nil {
+			exitError(err)
+		}
+		return
 	}
 	printIssue(root, issue, deps, comments)
 }
@@ -552,6 +578,7 @@ func runDepTree(root, issueID string) {
 // runReady handles pb ready.
 func runReady(root string, args []string) {
 	fs := flag.NewFlagSet("ready", flag.ExitOnError)
+	jsonOut := fs.Bool("json", false, "Output JSON")
 	_ = fs.Parse(args)
 	if err := ensureProject(root); err != nil {
 		exitError(err)
@@ -559,6 +586,20 @@ func runReady(root string, args []string) {
 	issues, err := pebbles.ListReadyIssues(root)
 	if err != nil {
 		exitError(err)
+	}
+	if *jsonOut {
+		entries := make([]issueJSON, 0, len(issues))
+		for _, issue := range issues {
+			entry, err := issueJSONWithDeps(root, issue)
+			if err != nil {
+				exitError(err)
+			}
+			entries = append(entries, entry)
+		}
+		if err := printJSON(entries); err != nil {
+			exitError(err)
+		}
+		return
 	}
 	widths := issueColumnWidthsForIssues(issues)
 	for _, issue := range issues {
