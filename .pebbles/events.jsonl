@@ -238,3 +238,7 @@
 {"type":"create","timestamp":"2026-01-20T02:22:33.986207Z","issue_id":"pb-225","payload":{"description":"Current pb log colors use dim tones that are hard to read in some themes. Switch to brighter accent colors and avoid dim styling.","priority":"2","title":"Brighten pb log colors","type":"bug"}}
 {"type":"status_update","timestamp":"2026-01-20T02:22:43.113939Z","issue_id":"pb-225","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-20T02:24:38.807482Z","issue_id":"pb-225","payload":{}}
+{"type":"create","timestamp":"2026-01-20T17:16:08.773746Z","issue_id":"pb-1f9","payload":{"description":"Add a short README section explaining that the SQLite cache is rebuilt from events.jsonl after writes and after pulls.","priority":"3","title":"Document sync model in README","type":"task"}}
+{"type":"close","timestamp":"2026-01-20T17:20:13.514239Z","issue_id":"pb-1f9","payload":{}}
+{"type":"create","timestamp":"2026-01-20T17:20:25.564501Z","issue_id":"pb-d01","payload":{"description":"sortEvents should apply rename events before deps/status so rebuilt caches don't fail on renamed issue IDs.","priority":"2","title":"Fix event sort order for renames","type":"bug"}}
+{"type":"close","timestamp":"2026-01-20T17:20:35.534983Z","issue_id":"pb-d01","payload":{}}

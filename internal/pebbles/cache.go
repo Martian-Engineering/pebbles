@@ -133,10 +133,12 @@ func eventTypePriority(eventType string) int {
 	switch eventType {
 	case "create":
 		return 0
-	case "dep_add", "dep_rm", "comment":
+	case "rename":
 		return 1
-	default: // close, update, rename, etc.
+	case "dep_add", "dep_rm", "comment":
 		return 2
+	default: // close, update, status, etc.
+		return 3
 	}
 }
 func sortEvents(events []Event) {

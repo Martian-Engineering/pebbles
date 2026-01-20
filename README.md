@@ -173,3 +173,10 @@ data is unavailable (or `--no-git` is used), they render as `unknown`.
 - Git merges are safe because events are append-only.
 - Run `pb init` in the project root before using other commands.
 - Release notes live in `CHANGELOG.md`.
+
+## Sync Model
+
+- Commands append to `.pebbles/events.jsonl`, then rebuild `.pebbles/pebbles.db`.
+- The SQLite cache is rebuilt by replaying the full event log in order.
+- After pulling new log entries, running any pb command will rebuild the cache.
+- Deleting the SQLite file is safe; it will be regenerated from the log.
