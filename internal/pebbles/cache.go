@@ -127,6 +127,18 @@ func openDB(path string) (*sql.DB, error) {
 }
 
 // sortEvents orders events by timestamp with a stable fallback.
+// eventTypePriority returns a sort order for event types.
+// Creates must come before deps/comments, which must come before status changes.
+func eventTypePriority(eventType string) int {
+	switch eventType {
+	case "create":
+		return 0
+	case "dep_add", "dep_rm", "comment":
+		return 1
+	default: // close, update, rename, etc.
+		return 2
+	}
+}
 func sortEvents(events []Event) {
 	// Preserve original ordering by embedding an index.
 	type indexed struct {
@@ -137,8 +149,14 @@ func sortEvents(events []Event) {
 	for i, event := range events {
 		indexedEvents = append(indexedEvents, indexed{Event: event, Index: i})
 	}
-	// Sort by timestamp, then by original index.
+	// Sort by event type priority, then timestamp, then original index.
+	// This ensures creates come before deps, which come before status changes.
 	sort.SliceStable(indexedEvents, func(i, j int) bool {
+		priI := eventTypePriority(indexedEvents[i].Type)
+		priJ := eventTypePriority(indexedEvents[j].Type)
+		if priI != priJ {
+			return priI < priJ
+		}
 		timeI, errI := time.Parse(time.RFC3339Nano, indexedEvents[i].Timestamp)
 		timeJ, errJ := time.Parse(time.RFC3339Nano, indexedEvents[j].Timestamp)
 		if errI == nil && errJ == nil && !timeI.Equal(timeJ) {
