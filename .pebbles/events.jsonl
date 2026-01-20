@@ -280,3 +280,5 @@
 {"type":"dep_add","timestamp":"2026-01-20T20:24:40.643146Z","issue_id":"pb-cf0.8","payload":{"dep_type":"parent-child","depends_on":"pb-cf0"}}
 {"type":"rename","timestamp":"2026-01-20T20:24:51.101674Z","issue_id":"pb-c6d","payload":{"new_id":"pb-cf0.9"}}
 {"type":"dep_add","timestamp":"2026-01-20T20:24:51.101679Z","issue_id":"pb-cf0.9","payload":{"dep_type":"parent-child","depends_on":"pb-cf0"}}
+{"type":"create","timestamp":"2026-01-20T20:26:01.563528Z","issue_id":"pb-31e","payload":{"description":"When pb log shows description/body details, render them with the same markdown highlighting as pb show.","priority":"2","title":"Render pb log descriptions as markdown","type":"feature"}}
+{"type":"create","timestamp":"2026-01-20T20:26:10.7647Z","issue_id":"pb-b32","payload":{"description":"Use brighter, more distinct colors for pb log output (event headers, labels, values). Avoid dim styling and increase contrast.","priority":"2","title":"Revamp pb log color palette","type":"feature"}}
