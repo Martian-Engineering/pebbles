@@ -159,6 +159,7 @@ func runList(root string, args []string) {
 	status := fs.String("status", "", "Filter by status (comma-separated)")
 	issueType := fs.String("type", "", "Filter by issue type (comma-separated)")
 	priority := fs.String("priority", "", "Filter by priority (P0-P4, comma-separated)")
+	blocked := fs.Bool("blocked", false, "Show issues blocked by open dependencies")
 	_ = fs.Parse(args)
 	// Validate the project and requested filters before listing.
 	if err := ensureProject(root); err != nil {
@@ -167,6 +168,24 @@ func runList(root string, args []string) {
 	filters, err := parseListFilters(*status, *issueType, *priority)
 	if err != nil {
 		exitError(err)
+	}
+	if *blocked {
+		blockedIssues, err := pebbles.ListBlockedIssues(root)
+		if err != nil {
+			exitError(err)
+		}
+		issues := make([]pebbles.Issue, 0, len(blockedIssues))
+		for _, item := range blockedIssues {
+			issues = append(issues, item.Issue)
+		}
+		widths := issueColumnWidthsForIssues(issues)
+		for _, item := range blockedIssues {
+			if !filters.matches(item.Issue) {
+				continue
+			}
+			fmt.Println(formatBlockedIssueLine(item.Issue, item.Blockers, widths))
+		}
+		return
 	}
 	issues, err := pebbles.ListIssueHierarchy(root)
 	if err != nil {
@@ -1103,6 +1122,28 @@ func formatIssueLine(issue pebbles.Issue, depth int, widths issueColumnWidths) s
 		padDisplay(issueType, widths.issueType),
 		issue.Title,
 	)
+}
+
+// formatBlockedIssueLine appends blocker IDs to a list output line.
+func formatBlockedIssueLine(issue pebbles.Issue, blockers []pebbles.Issue, widths issueColumnWidths) string {
+	line := formatIssueLine(issue, 0, widths)
+	blockerIDs := blockedIssueIDs(blockers)
+	if len(blockerIDs) == 0 {
+		return line
+	}
+	return fmt.Sprintf("%s (blocked by: %s)", line, strings.Join(blockerIDs, ", "))
+}
+
+// blockedIssueIDs returns a stable slice of blocker IDs.
+func blockedIssueIDs(blockers []pebbles.Issue) []string {
+	if len(blockers) == 0 {
+		return nil
+	}
+	ids := make([]string, 0, len(blockers))
+	for _, blocker := range blockers {
+		ids = append(ids, blocker.ID)
+	}
+	return ids
 }
 
 // formatDate renders a timestamp as YYYY-MM-DD when possible.
