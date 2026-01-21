@@ -39,6 +39,9 @@ type issueDetailJSON struct {
 	UpdatedAt   string             `json:"updated_at"`
 	ClosedAt    string             `json:"closed_at"`
 	Deps        []string           `json:"deps"`
+	Parents     []string           `json:"parents"`
+	Siblings    []string           `json:"siblings"`
+	Children    []string           `json:"children"`
 	Comments    []issueCommentJSON `json:"comments"`
 }
 
@@ -63,7 +66,7 @@ func buildIssueJSON(issue pebbles.Issue, deps []string) issueJSON {
 }
 
 // buildIssueDetailJSON converts an issue, deps, and comments into show output.
-func buildIssueDetailJSON(issue pebbles.Issue, deps []string, comments []pebbles.IssueComment) issueDetailJSON {
+func buildIssueDetailJSON(issue pebbles.Issue, deps []string, hierarchy pebbles.IssueHierarchy, comments []pebbles.IssueComment) issueDetailJSON {
 	// Mirror the list/ready fields and attach the full comment history.
 	if deps == nil {
 		deps = []string{}
@@ -79,8 +82,23 @@ func buildIssueDetailJSON(issue pebbles.Issue, deps []string, comments []pebbles
 		UpdatedAt:   issue.UpdatedAt,
 		ClosedAt:    issue.ClosedAt,
 		Deps:        deps,
+		Parents:     issueIDsFromIssues(hierarchy.Parents),
+		Siblings:    issueIDsFromIssues(hierarchy.Siblings),
+		Children:    issueIDsFromIssues(hierarchy.Children),
 		Comments:    buildIssueCommentsJSON(comments),
 	}
+}
+
+// issueIDsFromIssues extracts issue IDs for JSON output.
+func issueIDsFromIssues(issues []pebbles.Issue) []string {
+	if len(issues) == 0 {
+		return []string{}
+	}
+	ids := make([]string, 0, len(issues))
+	for _, issue := range issues {
+		ids = append(ids, issue.ID)
+	}
+	return ids
 }
 
 // buildIssueCommentsJSON converts issue comments to JSON-friendly structs.

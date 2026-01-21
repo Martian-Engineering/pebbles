@@ -137,7 +137,7 @@ Flags:
   --json   Output JSON object (issue, deps, comments). Example: --json
 
 Details:
-  - Default output includes description, dependencies, and comments.
+  - Default output includes description, hierarchy, dependencies, and comments.
 
 Workflows:
   - Inspect an issue: pb show pb-123
@@ -261,7 +261,7 @@ Details:
 Workflows:
   - Block a task: pb dep add pb-123 pb-456
   - Create an epic child: pb dep add pb-201 pb-200 --type parent-child
-  - Visualize blockers: pb dep tree pb-200
+  - Visualize hierarchy or blockers: pb dep tree pb-200
 `
 
 const depAddHelp = `Add a dependency between issues.
@@ -304,10 +304,10 @@ Usage:
   pb dep tree <issue>
 
 Details:
-  - Prints blockers with indentation and status icons.
+  - Prints parent-child hierarchy when present; otherwise blockers.
 
 Workflows:
-  - Inspect blockers: pb dep tree pb-123
+  - Inspect hierarchy/blockers: pb dep tree pb-123
 `
 
 const readyHelp = `List issues that are ready to work (open and unblocked).

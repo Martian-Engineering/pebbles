@@ -282,17 +282,21 @@ func runShow(root string, args []string) {
 	if err != nil {
 		exitError(err)
 	}
+	hierarchy, err := pebbles.GetIssueHierarchy(root, issue.ID)
+	if err != nil {
+		exitError(err)
+	}
 	comments, err := pebbles.ListIssueComments(root, id)
 	if err != nil {
 		exitError(err)
 	}
 	if *jsonOut {
-		if err := printJSON(buildIssueDetailJSON(issue, deps, comments)); err != nil {
+		if err := printJSON(buildIssueDetailJSON(issue, deps, hierarchy, comments)); err != nil {
 			exitError(err)
 		}
 		return
 	}
-	printIssue(root, issue, deps, comments)
+	printIssue(root, issue, hierarchy, deps, comments)
 }
 
 // optionalString tracks whether a string flag was explicitly set.
@@ -643,11 +647,32 @@ func runDepRemove(root, issueID, dependsOn, depType string) {
 
 // runDepTree prints a dependency tree for an issue.
 func runDepTree(root, issueID string) {
+	issue, _, err := pebbles.GetIssue(root, issueID)
+	if err != nil {
+		exitError(err)
+	}
+	targetID := issue.ID
+	depType := pebbles.DepTypeBlocks
+	hasHierarchy, err := pebbles.HasParentChildRelations(root, issueID)
+	if err != nil {
+		exitError(err)
+	}
+	if hasHierarchy {
+		depType = pebbles.DepTypeParentChild
+		node, err := pebbles.ParentChildTree(root, issueID)
+		if err != nil {
+			exitError(err)
+		}
+		fmt.Printf("TREE (%s)\n", depType)
+		printDepTree(node, 0, targetID)
+		return
+	}
 	node, err := pebbles.DependencyTree(root, issueID)
 	if err != nil {
 		exitError(err)
 	}
-	printDepTree(node, 0)
+	fmt.Printf("TREE (%s)\n", depType)
+	printDepTree(node, 0, targetID)
 }
 
 // runReady handles pb ready.
@@ -918,7 +943,7 @@ func printBeadsImportSummary(result pebbles.BeadsImportResult, dryRun bool, targ
 }
 
 // printIssue renders a single issue to stdout.
-func printIssue(root string, issue pebbles.Issue, deps []string, comments []pebbles.IssueComment) {
+func printIssue(root string, issue pebbles.Issue, hierarchy pebbles.IssueHierarchy, deps []string, comments []pebbles.IssueComment) {
 	// Header includes the status icon and priority badge.
 	statusIcon := renderStatusIcon(issue.Status)
 	priorityLabel := renderPriorityLabel(issue.Priority)
@@ -946,6 +971,8 @@ func printIssue(root string, issue pebbles.Issue, deps []string, comments []pebb
 	} else {
 		fmt.Println(renderMarkdown(issue.Description))
 	}
+	// Parent-child relationships provide context for epics/subtasks.
+	printIssueHierarchy(hierarchy)
 	// Dependency list with status per dependency.
 	fmt.Println("\nDEPENDENCIES")
 	if len(deps) == 0 {
@@ -962,6 +989,41 @@ func printIssue(root string, issue pebbles.Issue, deps []string, comments []pebb
 	}
 	// Comments keep issue discussion history close to the details.
 	printIssueComments(comments)
+}
+
+// printIssueHierarchy renders parent/child relationships when they exist.
+func printIssueHierarchy(hierarchy pebbles.IssueHierarchy) {
+	if len(hierarchy.Parents) == 0 && len(hierarchy.Children) == 0 && len(hierarchy.Siblings) == 0 {
+		return
+	}
+	// Only show siblings when the issue has at least one parent.
+	parentLabel := "PARENT"
+	if len(hierarchy.Parents) > 1 {
+		parentLabel = "PARENTS"
+	}
+	if len(hierarchy.Parents) > 0 {
+		printIssueRelationSection(parentLabel, hierarchy.Parents, true)
+		printIssueRelationSection("SIBLINGS", hierarchy.Siblings, true)
+	}
+	if len(hierarchy.Children) > 0 {
+		printIssueRelationSection("CHILDREN", hierarchy.Children, true)
+	}
+}
+
+// printIssueRelationSection renders a labeled list of related issues.
+func printIssueRelationSection(label string, issues []pebbles.Issue, showWhenEmpty bool) {
+	if len(issues) == 0 && !showWhenEmpty {
+		return
+	}
+	fmt.Printf("\n%s\n", label)
+	if len(issues) == 0 {
+		fmt.Println("  (none)")
+		return
+	}
+	// Keep each line compact with ID, status, and title.
+	for _, issue := range issues {
+		fmt.Printf("  → %s (%s) - %s\n", issue.ID, issue.Status, issue.Title)
+	}
 }
 
 // printIssueComments prints issue comments with timestamps and indentation.
@@ -1372,17 +1434,34 @@ func reorderFlags(args []string, flagsWithValues map[string]bool) []string {
 }
 
 // printDepTree renders dependency nodes with indentation.
-func printDepTree(node pebbles.DepNode, depth int) {
+func printDepTree(node pebbles.DepNode, depth int, targetID string) {
 	indent := strings.Repeat("  ", depth)
+	priorityLabel := pebbles.PriorityLabel(node.Issue.Priority)
+	issueType := node.Issue.IssueType
+	issueID := node.Issue.ID
+	if issueID == targetID {
+		issueID = maybeBold(issueID)
+	}
 	line := fmt.Sprintf(
-		"%s%s %s (%s)",
+		"%s%s %s (%s) [%s %s] - %s",
 		indent,
 		pebbles.StatusIcon(node.Issue.Status),
-		node.Issue.ID,
+		issueID,
 		node.Issue.Status,
+		priorityLabel,
+		issueType,
+		node.Issue.Title,
 	)
 	fmt.Println(line)
 	for _, child := range node.Dependencies {
-		printDepTree(child, depth+1)
+		printDepTree(child, depth+1, targetID)
 	}
+}
+
+// maybeBold emphasizes output when color is enabled.
+func maybeBold(value string) string {
+	if !colorEnabled {
+		return value
+	}
+	return ansiBold + value + ansiReset
 }

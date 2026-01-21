@@ -365,3 +365,30 @@ func getDeps(db *sql.DB, id, depType string) ([]string, error) {
 	}
 	return deps, nil
 }
+
+// getDependents fetches issue IDs that depend on the provided issue ID.
+func getDependents(db *sql.DB, id, depType string) ([]string, error) {
+	depType = NormalizeDepType(depType)
+	rows, err := db.Query(
+		"SELECT issue_id FROM deps WHERE depends_on_id = ? AND dep_type = ? ORDER BY issue_id",
+		id,
+		depType,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get dependents: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var deps []string
+	// Collect dependent IDs for the issue.
+	for rows.Next() {
+		var dep string
+		if err := rows.Scan(&dep); err != nil {
+			return nil, fmt.Errorf("scan dependent: %w", err)
+		}
+		deps = append(deps, dep)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("dependents rows: %w", err)
+	}
+	return deps, nil
+}
