@@ -10,7 +10,13 @@ const rootHelp = `Pebbles - A minimal issue tracker with append-only event log.
 Usage:
   pb <command> [flags]
   pb <command> --help
+  pb help
   pb --version
+
+Issue fields:
+  Status values: open, in_progress, closed (filters accept in-progress)
+  Type values: free-form; common: task, bug, feature, epic
+  Priority values: P0-P4 (or 0-4)
 
 Common workflows:
   pb init --prefix pb
@@ -61,7 +67,12 @@ Usage:
   pb init --prefix pb
 
 Flags:
-  --prefix <prefix>  Optional. Example: --prefix pb
+  --prefix <prefix>  Optional. Defaults to the repo folder name on first init.
+
+Details:
+  - Creates .pebbles/ with config, events log, and cache.
+  - If already initialized, leaves existing config unchanged.
+  - Use pb prefix set to change the prefix later.
 
 Workflows:
   - Run once per repo: pb init --prefix pb
@@ -76,9 +87,12 @@ Usage:
 
 Flags:
   --title <text>         Required. Example: --title "Fix login error"
-  --description <text>   Optional. Example: --description "Steps to reproduce..."
-  --type <type>          Issue type (task, bug, feature, epic). Example: --type bug
-  --priority <P0-P4>     Issue priority (default P2). Example: --priority P1
+  --description <text>   Optional. Markdown accepted. Example: --description "Steps to reproduce..."
+  --type <type>          Optional. Free-form; common: task, bug, feature, epic. Default: task.
+  --priority <P0-P4>     Optional. P0-P4 or 0-4 (default P2). Example: --priority P1
+
+Details:
+  - Generates a new issue id using the project prefix and prints it.
 
 Workflows:
   - Capture a quick task: pb create --title "Follow up with client"
@@ -96,13 +110,16 @@ Usage:
   pb list --json
 
 Flags:
-  --status <status>[,<status>...]   Filter by status. Example: --status open,in_progress
-  --type <type>[,<type>...]         Filter by type. Example: --type bug,task
-  --priority <P0-P4>[,<P0-P4>...]   Filter by priority. Example: --priority P0,P1
+  --status <status>[,<status>...]   Filter by status (open, in_progress, closed; hyphens ok). Example: --status open,in-progress
+  --type <type>[,<type>...]         Filter by type (case-insensitive). Example: --type bug,task
+  --priority <P0-P4>[,<P0-P4>...]   Filter by priority (P0-P4 or 0-4). Example: --priority P0,P1
   --stale                           Show open issues with no activity. Example: --stale --stale-days 30
-  --stale-days <days>               Days without activity (default 30). Example: --stale-days 14
+  --stale-days <days>               Days without activity (default 30, must be > 0). Example: --stale-days 14
   --blocked                         Show issues blocked by open dependencies. Example: --blocked
-  --json                            Output JSON array. Example: --json
+  --json                            Output JSON array of issues (includes deps). Example: --json
+
+Details:
+  - Status filters accept "in-progress" as an alias for "in_progress".
 
 Workflows:
   - Triage open bugs: pb list --status open --type bug
@@ -117,7 +134,10 @@ Usage:
   pb show <id> --json
 
 Flags:
-  --json   Output JSON. Example: --json
+  --json   Output JSON object (issue, deps, comments). Example: --json
+
+Details:
+  - Default output includes description, dependencies, and comments.
 
 Workflows:
   - Inspect an issue: pb show pb-123
@@ -132,10 +152,14 @@ Usage:
   pb update --description "Updated scope" <id>
 
 Flags:
-  --status <status>      New status (open, in_progress, blocked, closed). Example: --status blocked
-  --type <type>          New issue type. Example: --type chore
-  --description <text>   Replace description. Example: --description "New details"
-  --priority <P0-P4>     New priority. Example: --priority P0
+  --status <status>      New status (open, in_progress, closed). Example: --status in_progress
+  --type <type>          Replace issue type (free-form). Example: --type chore
+  --description <text>   Replace description (Markdown ok). Example: --description "New details"
+  --priority <P0-P4>     Replace priority (P0-P4 or 0-4). Example: --priority P0
+
+Details:
+  - You can update multiple fields in one command.
+  - Setting status to closed sets closed_at; other statuses clear closed_at.
 
 Workflows:
   - Start work: pb update <id> --status in_progress
@@ -147,6 +171,9 @@ const closeHelp = `Close an issue.
 Usage:
   pb close <id>
 
+Details:
+  - Sets status to closed and updates closed_at.
+
 Workflows:
   - Finish work: pb close pb-123
 `
@@ -155,6 +182,9 @@ const reopenHelp = `Reopen a closed issue.
 
 Usage:
   pb reopen <id>
+
+Details:
+  - Sets status back to open and clears closed_at.
 
 Workflows:
   - Reopen for follow-up: pb reopen pb-123
@@ -169,6 +199,9 @@ Usage:
 Flags:
   --body <text>   Required. Example: --body "Meeting notes..."
 
+Details:
+  - Wrap the body in quotes if it contains spaces or newlines.
+
 Workflows:
   - Record progress: pb comment <id> --body "Implemented parser"
   - Capture decisions: pb comment <id> --body "Agreed to ship Friday"
@@ -178,6 +211,9 @@ const importHelp = `Import issues into Pebbles.
 
 Usage:
   pb import beads [flags]
+
+Details:
+  - Only the "beads" importer is available today.
 
 Workflows:
   - Preview import: pb import beads --from ../beads --dry-run
@@ -194,11 +230,14 @@ Usage:
 
 Flags:
   --from <path>              Source Beads repo (default: current directory). Example: --from ../beads
-  --prefix <prefix>          Override target prefix. Example: --prefix pb
+  --prefix <prefix>          Override target prefix (defaults to Beads prefix). Example: --prefix pb
   --include-tombstones       Include deleted issues. Example: --include-tombstones
   --dry-run                  Preview changes without writing. Example: --dry-run
-  --backup                   Move existing .pebbles to a backup dir. Example: --backup
-  --force                    Remove existing .pebbles before import. Example: --force
+  --backup                   Move existing .pebbles to a backup dir (exclusive with --force). Example: --backup
+  --force                    Remove existing .pebbles before import (exclusive with --backup). Example: --force
+
+Details:
+  - Use --dry-run first to review the import plan.
 
 Workflows:
   - Always run a dry run first: pb import beads --from ../beads --dry-run
@@ -215,6 +254,10 @@ Usage:
 Flags:
   --type <blocks|parent-child>  Dependency type for add/rm. Example: --type parent-child
 
+Details:
+  - "blocks" means <issue> depends on <depends-on>.
+  - "parent-child" builds epic/subtask hierarchies.
+
 Workflows:
   - Block a task: pb dep add pb-123 pb-456
   - Create an epic child: pb dep add pb-201 pb-200 --type parent-child
@@ -228,7 +271,10 @@ Usage:
   pb dep add <issue> <depends-on> --type parent-child
 
 Flags:
-  --type <blocks|parent-child>  Dependency type. Example: --type blocks
+  --type <blocks|parent-child>  Dependency type (default blocks). Example: --type blocks
+
+Details:
+  - parent-child renames the child id to <parent>.<N> when needed.
 
 Workflows:
   - Block a task on another: pb dep add pb-123 pb-456
@@ -242,7 +288,10 @@ Usage:
   pb dep rm <issue> <depends-on> --type parent-child
 
 Flags:
-  --type <blocks|parent-child>  Dependency type. Example: --type blocks
+  --type <blocks|parent-child>  Dependency type (default blocks). Example: --type blocks
+
+Details:
+  - Removes the dependency edge but keeps issue ids unchanged.
 
 Workflows:
   - Unblock a task: pb dep rm pb-123 pb-456
@@ -253,6 +302,9 @@ const depTreeHelp = `Show the dependency tree for an issue.
 
 Usage:
   pb dep tree <issue>
+
+Details:
+  - Prints blockers with indentation and status icons.
 
 Workflows:
   - Inspect blockers: pb dep tree pb-123
@@ -265,7 +317,10 @@ Usage:
   pb ready --json
 
 Flags:
-  --json   Output JSON array. Example: --json
+  --json   Output JSON array of issues (includes deps). Example: --json
+
+Details:
+  - Ready issues are open and have no blocking dependencies.
 
 Workflows:
   - Daily queue: pb ready
@@ -277,6 +332,10 @@ const prefixHelp = `Update the prefix used for new issue ids.
 Usage:
   pb prefix set <prefix>
 
+Details:
+  - Updates the prefix for future issue ids only.
+  - Use pb rename-prefix to change existing issue ids.
+
 Workflows:
   - Set a short prefix: pb prefix set pb
 `
@@ -285,6 +344,10 @@ const renameHelp = `Rename an issue id.
 
 Usage:
   pb rename <old> <new>
+
+Details:
+  - Updates the issue id and dependency references.
+  - Fails if the new id already exists.
 
 Workflows:
   - Fix a typo: pb rename pb-abc pb-abd
@@ -298,8 +361,12 @@ Usage:
   pb rename-prefix --full <prefix>
 
 Flags:
-  --open   Rename only open issues (default). Example: --open pb
+  --open   Rename only open issues (default when no flag provided). Example: --open pb
   --full   Rename all issues (open and closed). Example: --full pb
+
+Details:
+  - Keeps the existing suffix after the "-" in each id.
+  - All ids must be in <prefix>-<suffix> format.
 
 Workflows:
   - Change prefix for open work: pb rename-prefix --open pb
@@ -326,6 +393,10 @@ Flags:
   --no-pager            Disable pager output. Example: --no-pager
   --json                Output JSON lines. Example: --json
 
+Details:
+  - --json outputs one JSON object per line (no pager).
+  - --table prints a single line per event instead of blocks.
+
 Workflows:
   - Recent activity: pb log --limit 50
   - Script export: pb log --json
@@ -340,6 +411,10 @@ Usage:
 
 Flags:
   --check   Only check for updates. Example: --check
+
+Details:
+  - Downloads and replaces the current binary when updates are available.
+  - Install requires a release build; use --check with dev builds.
 
 Workflows:
   - Verify before updating: pb self-update --check
