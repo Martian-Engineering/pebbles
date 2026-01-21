@@ -49,6 +49,8 @@ func main() {
 		runUpdate(root, args)
 	case "close":
 		runClose(root, args)
+	case "reopen":
+		runReopen(root, args)
 	case "comment":
 		runComment(root, args)
 	case "import":
@@ -65,6 +67,8 @@ func main() {
 		runRenamePrefix(root, args)
 	case "log":
 		runLog(root, args)
+	case "self-update":
+		runSelfUpdate(root, args)
 	case "help":
 		printUsage()
 	case "version":
@@ -87,6 +91,7 @@ func printVersion() {
 // runInit handles pb init.
 func runInit(root string, args []string) {
 	fs := flag.NewFlagSet("init", flag.ExitOnError)
+	setFlagUsage(fs, initHelp)
 	prefix := fs.String("prefix", "", "Prefix for new issue IDs")
 	_ = fs.Parse(args)
 	prefixSet := false
@@ -108,6 +113,7 @@ func runInit(root string, args []string) {
 // runCreate handles pb create.
 func runCreate(root string, args []string) {
 	fs := flag.NewFlagSet("create", flag.ExitOnError)
+	setFlagUsage(fs, createHelp)
 	title := fs.String("title", "", "Issue title")
 	description := fs.String("description", "", "Issue description")
 	issueType := fs.String("type", "task", "Issue type")
@@ -156,9 +162,14 @@ func runCreate(root string, args []string) {
 // runList handles pb list.
 func runList(root string, args []string) {
 	fs := flag.NewFlagSet("list", flag.ExitOnError)
+	setFlagUsage(fs, listHelp)
 	status := fs.String("status", "", "Filter by status (comma-separated)")
 	issueType := fs.String("type", "", "Filter by issue type (comma-separated)")
 	priority := fs.String("priority", "", "Filter by priority (P0-P4, comma-separated)")
+	stale := fs.Bool("stale", false, "Show stale issues (open with no activity for N days)")
+	staleDays := fs.Int("stale-days", 30, "Days without activity to mark an issue stale")
+	jsonOut := fs.Bool("json", false, "Output JSON")
+	blocked := fs.Bool("blocked", false, "Show issues blocked by open dependencies")
 	_ = fs.Parse(args)
 	// Validate the project and requested filters before listing.
 	if err := ensureProject(root); err != nil {
@@ -168,9 +179,81 @@ func runList(root string, args []string) {
 	if err != nil {
 		exitError(err)
 	}
+	if *blocked {
+		blockedIssues, err := pebbles.ListBlockedIssues(root)
+		if err != nil {
+			exitError(err)
+		}
+		issues := make([]pebbles.Issue, 0, len(blockedIssues))
+		for _, item := range blockedIssues {
+			issues = append(issues, item.Issue)
+		}
+		widths := issueColumnWidthsForIssues(issues)
+		for _, item := range blockedIssues {
+			if !filters.matches(item.Issue) {
+				continue
+			}
+			fmt.Println(formatBlockedIssueLine(item.Issue, item.Blockers, widths))
+		}
+		return
+	}
 	issues, err := pebbles.ListIssueHierarchy(root)
 	if err != nil {
 		exitError(err)
+	}
+	if *stale {
+		if *staleDays <= 0 {
+			exitError(fmt.Errorf("stale-days must be positive"))
+		}
+		activityByID, err := pebbles.ListIssueActivity(root)
+		if err != nil {
+			exitError(err)
+		}
+		// Compare activity timestamps against a rolling day cutoff.
+		cutoff := time.Now().UTC().Add(-time.Duration(*staleDays) * 24 * time.Hour)
+		rows := make([]staleIssueRow, 0, len(issues))
+		for _, item := range issues {
+			if !filters.matches(item.Issue) {
+				continue
+			}
+			if item.Issue.Status == pebbles.StatusClosed {
+				continue
+			}
+			lastActivity, err := issueLastActivity(item.Issue, activityByID)
+			if err != nil {
+				exitError(err)
+			}
+			if lastActivity.After(cutoff) {
+				continue
+			}
+			rows = append(rows, staleIssueRow{
+				Item:     item,
+				Activity: lastActivity.Format("2006-01-02"),
+			})
+		}
+		widths := staleIssueWidthsForRows(rows)
+		for _, row := range rows {
+			fmt.Println(formatStaleIssueLine(row, widths))
+		}
+		return
+	}
+	// JSON output skips column formatting and writes a single payload.
+	if *jsonOut {
+		entries := make([]issueJSON, 0, len(issues))
+		for _, item := range issues {
+			if !filters.matches(item.Issue) {
+				continue
+			}
+			entry, err := issueJSONWithDeps(root, item.Issue)
+			if err != nil {
+				exitError(err)
+			}
+			entries = append(entries, entry)
+		}
+		if err := printJSON(entries); err != nil {
+			exitError(err)
+		}
+		return
 	}
 	widths := issueColumnWidthsForHierarchy(issues)
 	for _, item := range issues {
@@ -184,6 +267,8 @@ func runList(root string, args []string) {
 // runShow handles pb show.
 func runShow(root string, args []string) {
 	fs := flag.NewFlagSet("show", flag.ExitOnError)
+	setFlagUsage(fs, showHelp)
+	jsonOut := fs.Bool("json", false, "Output JSON")
 	_ = fs.Parse(args)
 	if err := ensureProject(root); err != nil {
 		exitError(err)
@@ -200,6 +285,12 @@ func runShow(root string, args []string) {
 	comments, err := pebbles.ListIssueComments(root, id)
 	if err != nil {
 		exitError(err)
+	}
+	if *jsonOut {
+		if err := printJSON(buildIssueDetailJSON(issue, deps, comments)); err != nil {
+			exitError(err)
+		}
+		return
 	}
 	printIssue(root, issue, deps, comments)
 }
@@ -228,6 +319,7 @@ func (opt *optionalString) Set(value string) error {
 // runUpdate handles pb update.
 func runUpdate(root string, args []string) {
 	fs := flag.NewFlagSet("update", flag.ExitOnError)
+	setFlagUsage(fs, updateHelp)
 	status := fs.String("status", "", "New status")
 	var issueType optionalString
 	var description optionalString
@@ -297,6 +389,7 @@ func runUpdate(root string, args []string) {
 // runClose handles pb close.
 func runClose(root string, args []string) {
 	fs := flag.NewFlagSet("close", flag.ExitOnError)
+	setFlagUsage(fs, closeHelp)
 	_ = fs.Parse(args)
 	// Validate inputs before closing the issue.
 	if err := ensureProject(root); err != nil {
@@ -320,9 +413,40 @@ func runClose(root string, args []string) {
 	}
 }
 
+// runReopen handles pb reopen.
+func runReopen(root string, args []string) {
+	fs := flag.NewFlagSet("reopen", flag.ExitOnError)
+	setFlagUsage(fs, reopenHelp)
+	_ = fs.Parse(args)
+	// Validate inputs before reopening the issue.
+	if err := ensureProject(root); err != nil {
+		exitError(err)
+	}
+	if fs.NArg() != 1 {
+		exitError(fmt.Errorf("reopen requires issue id"))
+	}
+	id := fs.Arg(0)
+	issue, _, err := pebbles.GetIssue(root, id)
+	if err != nil {
+		exitError(err)
+	}
+	if issue.Status != pebbles.StatusClosed {
+		exitError(fmt.Errorf("issue is already open"))
+	}
+	event := pebbles.NewStatusEvent(id, pebbles.StatusOpen, pebbles.NowTimestamp())
+	// Append the status event and rebuild the cache.
+	if err := pebbles.AppendEvent(root, event); err != nil {
+		exitError(err)
+	}
+	if err := pebbles.RebuildCache(root); err != nil {
+		exitError(err)
+	}
+}
+
 // runComment handles pb comment.
 func runComment(root string, args []string) {
 	fs := flag.NewFlagSet("comment", flag.ExitOnError)
+	setFlagUsage(fs, commentHelp)
 	body := fs.String("body", "", "Comment body")
 	_ = fs.Parse(reorderFlags(args, map[string]bool{"--body": true}))
 	// Validate inputs before appending a comment event.
@@ -352,6 +476,10 @@ func runComment(root string, args []string) {
 
 // runImport handles pb import.
 func runImport(root string, args []string) {
+	if len(args) == 0 || isHelpArg(args[0]) {
+		fmt.Print(importHelp)
+		return
+	}
 	if len(args) < 1 {
 		exitError(fmt.Errorf("usage: pb import <beads> [flags]"))
 	}
@@ -366,6 +494,7 @@ func runImport(root string, args []string) {
 // runImportBeads imports Beads issues into Pebbles.
 func runImportBeads(root string, args []string) {
 	fs := flag.NewFlagSet("import beads", flag.ExitOnError)
+	setFlagUsage(fs, importBeadsHelp)
 	from := fs.String("from", "", "Beads repo root (default: current directory)")
 	prefix := fs.String("prefix", "", "Issue prefix override")
 	includeTombstones := fs.Bool("include-tombstones", false, "Import tombstone issues")
@@ -411,6 +540,10 @@ func runImportBeads(root string, args []string) {
 
 // runDep handles pb dep commands.
 func runDep(root string, args []string) {
+	if len(args) == 0 || isHelpArg(args[0]) {
+		fmt.Print(depHelp)
+		return
+	}
 	// Validate CLI arguments for dependency creation.
 	if err := ensureProject(root); err != nil {
 		exitError(err)
@@ -423,6 +556,7 @@ func runDep(root string, args []string) {
 	switch action {
 	case "add":
 		addFlags := flag.NewFlagSet("dep add", flag.ExitOnError)
+		setFlagUsage(addFlags, depAddHelp)
 		depType := addFlags.String("type", pebbles.DepTypeBlocks, "Dependency type (blocks or parent-child)")
 		_ = addFlags.Parse(reorderFlags(args[1:], map[string]bool{"--type": true}))
 		if addFlags.NArg() != 2 {
@@ -431,6 +565,7 @@ func runDep(root string, args []string) {
 		runDepAdd(root, addFlags.Arg(0), addFlags.Arg(1), pebbles.NormalizeDepType(*depType))
 	case "rm":
 		rmFlags := flag.NewFlagSet("dep rm", flag.ExitOnError)
+		setFlagUsage(rmFlags, depRmHelp)
 		depType := rmFlags.String("type", pebbles.DepTypeBlocks, "Dependency type (blocks or parent-child)")
 		_ = rmFlags.Parse(reorderFlags(args[1:], map[string]bool{"--type": true}))
 		if rmFlags.NArg() != 2 {
@@ -438,6 +573,10 @@ func runDep(root string, args []string) {
 		}
 		runDepRemove(root, rmFlags.Arg(0), rmFlags.Arg(1), pebbles.NormalizeDepType(*depType))
 	case "tree":
+		if len(args) == 2 && isHelpArg(args[1]) {
+			fmt.Print(depTreeHelp)
+			return
+		}
 		if len(args) != 2 {
 			exitError(fmt.Errorf("usage: pb dep tree <issue>"))
 		}
@@ -514,6 +653,8 @@ func runDepTree(root, issueID string) {
 // runReady handles pb ready.
 func runReady(root string, args []string) {
 	fs := flag.NewFlagSet("ready", flag.ExitOnError)
+	setFlagUsage(fs, readyHelp)
+	jsonOut := fs.Bool("json", false, "Output JSON")
 	_ = fs.Parse(args)
 	if err := ensureProject(root); err != nil {
 		exitError(err)
@@ -521,6 +662,20 @@ func runReady(root string, args []string) {
 	issues, err := pebbles.ListReadyIssues(root)
 	if err != nil {
 		exitError(err)
+	}
+	if *jsonOut {
+		entries := make([]issueJSON, 0, len(issues))
+		for _, issue := range issues {
+			entry, err := issueJSONWithDeps(root, issue)
+			if err != nil {
+				exitError(err)
+			}
+			entries = append(entries, entry)
+		}
+		if err := printJSON(entries); err != nil {
+			exitError(err)
+		}
+		return
 	}
 	widths := issueColumnWidthsForIssues(issues)
 	for _, issue := range issues {
@@ -531,6 +686,7 @@ func runReady(root string, args []string) {
 // runPrefix handles pb prefix commands.
 func runPrefix(root string, args []string) {
 	fs := flag.NewFlagSet("prefix", flag.ExitOnError)
+	setFlagUsage(fs, prefixHelp)
 	_ = fs.Parse(args)
 	if err := ensureProject(root); err != nil {
 		exitError(err)
@@ -570,6 +726,7 @@ func runPrefixSet(root, prefix string) {
 // runRename handles pb rename.
 func runRename(root string, args []string) {
 	fs := flag.NewFlagSet("rename", flag.ExitOnError)
+	setFlagUsage(fs, renameHelp)
 	_ = fs.Parse(args)
 	if err := ensureProject(root); err != nil {
 		exitError(err)
@@ -607,6 +764,7 @@ func runRename(root string, args []string) {
 // runRenamePrefix updates IDs to a new prefix.
 func runRenamePrefix(root string, args []string) {
 	fs := flag.NewFlagSet("rename-prefix", flag.ExitOnError)
+	setFlagUsage(fs, renamePrefixHelp)
 	full := fs.Bool("full", false, "Rename all issues")
 	open := fs.Bool("open", false, "Rename only open issues")
 	_ = fs.Parse(reorderFlags(args, map[string]bool{}))
@@ -826,43 +984,7 @@ func printIssueComments(comments []pebbles.IssueComment) {
 
 // printUsage prints a brief usage message.
 func printUsage() {
-	fmt.Println("Pebbles - A minimal issue tracker with append-only event log.")
-	fmt.Println("")
-	fmt.Println("Usage:")
-	fmt.Println("  pb [command]")
-	fmt.Println("")
-	fmt.Println("Working With Issues:")
-	fmt.Println("  create      Create a new issue")
-	fmt.Println("  list        List issues")
-	fmt.Println("  show        Show issue details")
-	fmt.Println("  version     Show pb version")
-	fmt.Println("  update      Update an issue")
-	fmt.Println("  close       Close an issue")
-	fmt.Println("  comment     Add a comment to an issue")
-	fmt.Println("  rename      Rename an issue id")
-	fmt.Println("  rename-prefix Rename issues to a new prefix (flags before prefix)")
-	fmt.Println("  ready       Show issues ready to work (no blockers)")
-	fmt.Println("  log         Show the event log (pretty view)")
-	fmt.Println("")
-	fmt.Println("Import:")
-	fmt.Println("  import beads Import issues from a Beads project")
-	fmt.Println("")
-	fmt.Println("Dependencies:")
-	fmt.Println("  dep add     Add a dependency (--type blocks|parent-child)")
-	fmt.Println("  dep rm      Remove a dependency (--type blocks|parent-child)")
-	fmt.Println("  dep tree    Show dependency tree")
-	fmt.Println("")
-	fmt.Println("Prefixes:")
-	fmt.Println("  prefix set  Update the prefix used for new ids")
-	fmt.Println("")
-	fmt.Println("Setup:")
-	fmt.Println("  init        Initialize a pebbles project")
-	fmt.Println("  init --prefix <prefix> Initialize with a custom prefix")
-	fmt.Println("  help        Show this help")
-	fmt.Println("")
-	fmt.Println("Styling:")
-	fmt.Println("  list/show output uses ANSI colors when stdout is a TTY.")
-	fmt.Println("  Set NO_COLOR=1 or PB_NO_COLOR=1 to disable.")
+	fmt.Print(rootHelp)
 }
 
 // listFilters holds optional filters for pb list output.
@@ -1012,6 +1134,18 @@ type issueColumnWidths struct {
 	issueType int
 }
 
+// staleIssueRow pairs a hierarchy item with its last activity display value.
+type staleIssueRow struct {
+	Item     pebbles.IssueHierarchyItem
+	Activity string
+}
+
+// staleIssueWidths stores column widths for stale list output.
+type staleIssueWidths struct {
+	issue    issueColumnWidths
+	activity int
+}
+
 // issueColumnWidthsForHierarchy computes display widths for a hierarchy list.
 func issueColumnWidthsForHierarchy(items []pebbles.IssueHierarchyItem) issueColumnWidths {
 	var widths issueColumnWidths
@@ -1026,6 +1160,16 @@ func issueColumnWidthsForIssues(issues []pebbles.Issue) issueColumnWidths {
 	var widths issueColumnWidths
 	for _, issue := range issues {
 		updateIssueColumnWidths(&widths, issue)
+	}
+	return widths
+}
+
+// staleIssueWidthsForRows computes display widths for stale list output.
+func staleIssueWidthsForRows(rows []staleIssueRow) staleIssueWidths {
+	var widths staleIssueWidths
+	for _, row := range rows {
+		updateIssueColumnWidths(&widths.issue, row.Item.Issue)
+		widths.activity = maxWidth(widths.activity, displayWidth(row.Activity))
 	}
 	return widths
 }
@@ -1105,6 +1249,67 @@ func formatIssueLine(issue pebbles.Issue, depth int, widths issueColumnWidths) s
 	)
 }
 
+// formatStaleIssueLine renders a stale list line with a last-activity column.
+func formatStaleIssueLine(row staleIssueRow, widths staleIssueWidths) string {
+	indent := strings.Repeat("  ", row.Item.Depth)
+	statusIcon := renderStatusIcon(row.Item.Issue.Status)
+	priorityLabel := fmt.Sprintf("● %s", renderPriorityLabel(row.Item.Issue.Priority))
+	issueType := renderIssueType(row.Item.Issue.IssueType)
+	return fmt.Sprintf(
+		"%s%s %s [%s] [%s] [%s] - %s",
+		indent,
+		padDisplay(statusIcon, widths.issue.status),
+		padDisplay(row.Item.Issue.ID, widths.issue.id),
+		padDisplay(priorityLabel, widths.issue.priority),
+		padDisplay(issueType, widths.issue.issueType),
+		padDisplay(row.Activity, widths.activity),
+		row.Item.Issue.Title,
+	)
+}
+
+// issueLastActivity returns the last activity time for an issue.
+func issueLastActivity(issue pebbles.Issue, activityByID map[string]time.Time) (time.Time, error) {
+	// Prefer activity derived from the event log when available.
+	if activity, ok := activityByID[issue.ID]; ok {
+		return activity, nil
+	}
+	// Fall back to persisted timestamps when activity data is missing.
+	if issue.UpdatedAt != "" {
+		parsed, err := time.Parse(time.RFC3339Nano, issue.UpdatedAt)
+		if err == nil {
+			return parsed, nil
+		}
+	}
+	if issue.CreatedAt != "" {
+		parsed, err := time.Parse(time.RFC3339Nano, issue.CreatedAt)
+		if err != nil {
+			return time.Time{}, fmt.Errorf("parse created_at for %s: %w", issue.ID, err)
+		}
+		return parsed, nil
+	}
+	return time.Time{}, fmt.Errorf("missing activity timestamp for %s", issue.ID)
+}
+// formatBlockedIssueLine appends blocker IDs to a list output line.
+func formatBlockedIssueLine(issue pebbles.Issue, blockers []pebbles.Issue, widths issueColumnWidths) string {
+	line := formatIssueLine(issue, 0, widths)
+	blockerIDs := blockedIssueIDs(blockers)
+	if len(blockerIDs) == 0 {
+		return line
+	}
+	return fmt.Sprintf("%s (blocked by: %s)", line, strings.Join(blockerIDs, ", "))
+}
+
+// blockedIssueIDs returns a stable slice of blocker IDs.
+func blockedIssueIDs(blockers []pebbles.Issue) []string {
+	if len(blockers) == 0 {
+		return nil
+	}
+	ids := make([]string, 0, len(blockers))
+	for _, blocker := range blockers {
+		ids = append(ids, blocker.ID)
+	}
+	return ids
+}
 // formatDate renders a timestamp as YYYY-MM-DD when possible.
 func formatDate(timestamp string) string {
 	parsed, err := time.Parse(time.RFC3339Nano, timestamp)

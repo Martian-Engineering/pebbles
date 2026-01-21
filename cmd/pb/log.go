@@ -49,6 +49,12 @@ type logLine struct {
 	Details    string
 }
 
+// logDetailSections splits detail lines from description/body text.
+type logDetailSections struct {
+	Lines       []string
+	Description string
+}
+
 type logColumnWidths struct {
 	Actor      int
 	ActorDate  int
@@ -95,6 +101,7 @@ func enrichEvent(event pebbles.Event, descriptions map[string]string) pebbles.Ev
 // runLog handles pb log.
 func runLog(root string, args []string) {
 	fs := flag.NewFlagSet("log", flag.ExitOnError)
+	setFlagUsage(fs, logHelp)
 	var limit int
 	fs.IntVar(&limit, "limit", 0, "Limit number of events")
 	fs.IntVar(&limit, "n", 0, "Alias for --limit")
@@ -384,8 +391,8 @@ func logEventDetails(event pebbles.Event) string {
 	return ""
 }
 
-// logEventDetailLines returns payload details formatted as individual lines.
-func logEventDetailLines(event pebbles.Event) []string {
+// logEventDetailSections returns payload detail lines and description/body text.
+func logEventDetailSections(event pebbles.Event) logDetailSections {
 	switch event.Type {
 	case pebbles.EventTypeCreate:
 		// Limit create output to the fields that matter in logs.
@@ -396,13 +403,13 @@ func logEventDetailLines(event pebbles.Event) []string {
 		if priority := event.Payload["priority"]; priority != "" {
 			lines = append(lines, fmt.Sprintf("priority=%s", formatPriority(priority)))
 		}
-		if description := event.Payload["description"]; description != "" {
-			lines = append(lines, fmt.Sprintf("description=%s", formatPayloadValue("description", description)))
+		return logDetailSections{
+			Lines:       lines,
+			Description: logDetailDescription(event.Payload["description"]),
 		}
-		return lines
 	case pebbles.EventTypeStatus:
 		if status := event.Payload["status"]; status != "" {
-			return []string{fmt.Sprintf("status=%s", status)}
+			return logDetailSections{Lines: []string{fmt.Sprintf("status=%s", status)}}
 		}
 	case pebbles.EventTypeUpdate:
 		var lines []string
@@ -412,18 +419,14 @@ func logEventDetailLines(event pebbles.Event) []string {
 		if priority := event.Payload["priority"]; priority != "" {
 			lines = append(lines, fmt.Sprintf("priority=%s", formatPriority(priority)))
 		}
-		if description := event.Payload["description"]; description != "" {
-			lines = append(lines, fmt.Sprintf("description=%s", formatPayloadValue("description", description)))
+		return logDetailSections{
+			Lines:       lines,
+			Description: logDetailDescription(event.Payload["description"]),
 		}
-		return lines
 	case pebbles.EventTypeClose:
-		if description := event.Payload["description"]; description != "" {
-			return []string{fmt.Sprintf("description=%s", formatPayloadValue("description", description))}
-		}
+		return logDetailSections{Description: logDetailDescription(event.Payload["description"])}
 	case pebbles.EventTypeComment:
-		if body := event.Payload["body"]; body != "" {
-			return []string{fmt.Sprintf("body=%s", formatPayloadValue("body", body))}
-		}
+		return logDetailSections{Description: logDetailDescription(event.Payload["body"])}
 	case pebbles.EventTypeDepAdd, pebbles.EventTypeDepRemove:
 		var lines []string
 		if dependsOn := event.Payload["depends_on"]; dependsOn != "" {
@@ -435,11 +438,19 @@ func logEventDetailLines(event pebbles.Event) []string {
 				lines = append(lines, fmt.Sprintf("dep_type=%s", normalized))
 			}
 		}
-		return lines
+		return logDetailSections{Lines: lines}
 	default:
-		return formatPayloadLines(event.Payload)
+		return logDetailSections{Lines: formatPayloadLines(event.Payload)}
 	}
-	return nil
+	return logDetailSections{}
+}
+
+// logDetailDescription normalizes description/body text for log rendering.
+func logDetailDescription(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return ""
+	}
+	return value
 }
 
 // formatPriority normalizes priority payload values as P0-P4 when possible.
@@ -517,35 +528,52 @@ func logEventTypeColor(eventType string) string {
 	// Keep event colors distinct so each log entry is easy to scan.
 	switch strings.ToLower(eventType) {
 	case "create":
-		return ansiBrightBlue
+		return ansiBrightGreen
 	case "status":
 		return ansiBrightYellow
+	case "update":
+		return ansiBrightBlue
 	case "close":
-		return ansiBrightGreen
-	case "comment":
 		return ansiBrightMagenta
-	case "dep_add":
+	case "comment":
 		return ansiBrightCyan
+	case "dep_add":
+		return ansiBrightWhite
 	case "dep_rm":
-		return ansiRed
+		return ansiBrightRed
 	default:
-		return ansiYellow
+		return ansiBrightWhite
 	}
 }
 
 // renderLogEventType returns a colored event label when enabled.
 func renderLogEventType(eventType string) string {
-	return colorize(eventType, logEventTypeColor(eventType))
+	return colorize(eventType, ansiBold+logEventTypeColor(eventType))
 }
 
-// renderLogLabel applies muted styling to log field labels.
+// renderLogHeaderLabel applies high-contrast styling to the log header label.
+func renderLogHeaderLabel(label string) string {
+	return colorize(label, ansiBold+ansiBrightYellow)
+}
+
+// renderLogLineNumber returns a colored line number for log output.
+func renderLogLineNumber(line int) string {
+	return colorize(strconv.Itoa(line), ansiBold+ansiBrightWhite)
+}
+
+// renderLogLabel applies high-contrast styling to log field labels.
 func renderLogLabel(label string) string {
-	return colorize(label, ansiBrightCyan)
+	return colorize(label, ansiBold+ansiBrightBlue)
+}
+
+// renderLogValue applies high-contrast styling to log field values.
+func renderLogValue(value string) string {
+	return colorize(value, ansiBrightWhite)
 }
 
 // renderLogIssueID returns a colored issue ID for log output.
 func renderLogIssueID(issueID string) string {
-	return colorize(issueID, ansiBrightCyan)
+	return colorize(issueID, ansiBold+ansiBrightMagenta)
 }
 
 // renderLogDetail formats a log detail key/value with ANSI styling.
@@ -576,7 +604,7 @@ func renderLogDetailValue(key, value string) string {
 	case "depends_on":
 		return renderLogIssueID(value)
 	default:
-		return value
+		return renderLogValue(value)
 	}
 }
 
@@ -584,23 +612,39 @@ func renderLogDetailValue(key, value string) string {
 func formatPrettyLog(entry logEntry, line logLine) string {
 	var output strings.Builder
 	// Header line includes the log line number, event type, and issue id.
-	output.WriteString(fmt.Sprintf("%s %d %s %s\n", renderLogLabel("event"), entry.Entry.Line, renderLogEventType(line.EventType), renderLogIssueID(line.IssueID)))
+	output.WriteString(fmt.Sprintf("%s %s %s %s\n", renderLogHeaderLabel("event"), renderLogLineNumber(entry.Entry.Line), renderLogEventType(line.EventType), renderLogIssueID(line.IssueID)))
 	// Add core metadata lines with aligned labels.
-	output.WriteString(fmt.Sprintf("%s %s\n", renderLogLabel("Title:"), colorize(line.IssueTitle, ansiBold)))
-	output.WriteString(fmt.Sprintf("%s  %s\n", renderLogLabel("When:"), line.EventTime))
-	output.WriteString(fmt.Sprintf("%s %s (%s)\n", renderLogLabel("Actor:"), line.Actor, line.ActorDate))
+	output.WriteString(fmt.Sprintf("%s %s\n", renderLogLabel("Title:"), colorize(line.IssueTitle, ansiBold+ansiBrightWhite)))
+	output.WriteString(fmt.Sprintf("%s  %s\n", renderLogLabel("When:"), renderLogValue(line.EventTime)))
+	output.WriteString(fmt.Sprintf("%s %s (%s)\n", renderLogLabel("Actor:"), renderLogValue(line.Actor), renderLogValue(line.ActorDate)))
 	// Render payload details with indentation or an explicit none marker.
-	details := logEventDetailLines(entry.Entry.Event)
-	if len(details) == 0 {
-		output.WriteString(fmt.Sprintf("%s %s", renderLogLabel("Details:"), renderLogLabel("(none)")))
+	details := logEventDetailSections(entry.Entry.Event)
+	if len(details.Lines) == 0 && details.Description == "" {
+		output.WriteString(fmt.Sprintf("%s %s", renderLogLabel("Details:"), renderLogDetailValue("details", "(none)")))
 		return output.String()
 	}
 	output.WriteString(fmt.Sprintf("%s\n", renderLogLabel("Details:")))
-	for index, detail := range details {
+	for index, detail := range details.Lines {
 		output.WriteString("  ")
 		output.WriteString(renderLogDetail(detail))
-		if index < len(details)-1 {
+		if index < len(details.Lines)-1 {
 			output.WriteString("\n")
+		}
+	}
+	if details.Description != "" {
+		if len(details.Lines) > 0 {
+			output.WriteString("\n\n")
+		} else {
+			output.WriteString("\n")
+		}
+		rendered := renderMarkdown(details.Description)
+		descriptionLines := strings.Split(rendered, "\n")
+		for index, line := range descriptionLines {
+			output.WriteString("  ")
+			output.WriteString(line)
+			if index < len(descriptionLines)-1 {
+				output.WriteString("\n")
+			}
 		}
 	}
 	return output.String()

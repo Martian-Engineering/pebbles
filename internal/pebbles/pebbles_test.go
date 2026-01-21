@@ -95,6 +95,38 @@ func TestCreateUpdateClose(t *testing.T) {
 	}
 }
 
+// TestReopenClearsClosedAt ensures reopening clears the close timestamp.
+func TestReopenClearsClosedAt(t *testing.T) {
+	root := t.TempDir()
+	if err := InitProject(root); err != nil {
+		t.Fatalf("init project: %v", err)
+	}
+	issueID := "pb-reopen"
+	// Create and close the issue before reopening.
+	if err := AppendEvent(root, NewCreateEvent(issueID, "Reopen", "", "task", "2024-01-01T00:00:00Z", 2)); err != nil {
+		t.Fatalf("append create: %v", err)
+	}
+	if err := AppendEvent(root, NewCloseEvent(issueID, "2024-01-01T01:00:00Z")); err != nil {
+		t.Fatalf("append close: %v", err)
+	}
+	if err := AppendEvent(root, NewStatusEvent(issueID, StatusOpen, "2024-01-01T02:00:00Z")); err != nil {
+		t.Fatalf("append reopen status: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache: %v", err)
+	}
+	issue, _, err := GetIssue(root, issueID)
+	if err != nil {
+		t.Fatalf("get issue after reopen: %v", err)
+	}
+	if issue.Status != StatusOpen {
+		t.Fatalf("expected status open, got %s", issue.Status)
+	}
+	if issue.ClosedAt != "" {
+		t.Fatalf("expected closed_at to be cleared")
+	}
+}
+
 // TestListIssueComments verifies comment events are collected by issue.
 func TestListIssueComments(t *testing.T) {
 	root := t.TempDir()
@@ -250,6 +282,61 @@ func TestReadyList(t *testing.T) {
 	}
 	if len(ready) != 2 || ready[0].ID != issueA || ready[1].ID != issueC {
 		t.Fatalf("expected %s and %s ready", issueA, issueC)
+	}
+}
+
+// TestBlockedList verifies dependency-based blocked filtering.
+func TestBlockedList(t *testing.T) {
+	root := t.TempDir()
+	if err := InitProject(root); err != nil {
+		t.Fatalf("init project: %v", err)
+	}
+	issueA := "pb-blocked-a"
+	issueB := "pb-blocked-b"
+	issueC := "pb-blocked-c"
+	if err := AppendEvent(root, NewCreateEvent(issueA, "Issue A", "", "task", "2024-01-02T00:01:00Z", 2)); err != nil {
+		t.Fatalf("append create A: %v", err)
+	}
+	if err := AppendEvent(root, NewCreateEvent(issueB, "Issue B", "", "task", "2024-01-02T00:01:01Z", 2)); err != nil {
+		t.Fatalf("append create B: %v", err)
+	}
+	if err := AppendEvent(root, NewCreateEvent(issueC, "Issue C", "", "task", "2024-01-02T00:01:02Z", 2)); err != nil {
+		t.Fatalf("append create C: %v", err)
+	}
+	if err := AppendEvent(root, NewDepAddEvent(issueA, issueB, DepTypeBlocks, "2024-01-02T00:01:03Z")); err != nil {
+		t.Fatalf("append dep A->B: %v", err)
+	}
+	if err := AppendEvent(root, NewDepAddEvent(issueC, issueB, DepTypeBlocks, "2024-01-02T00:01:04Z")); err != nil {
+		t.Fatalf("append dep C->B: %v", err)
+	}
+	if err := AppendEvent(root, NewCloseEvent(issueC, "2024-01-02T00:01:05Z")); err != nil {
+		t.Fatalf("append close C: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache: %v", err)
+	}
+	blocked, err := ListBlockedIssues(root)
+	if err != nil {
+		t.Fatalf("list blocked: %v", err)
+	}
+	if len(blocked) != 1 || blocked[0].Issue.ID != issueA {
+		t.Fatalf("expected %s blocked", issueA)
+	}
+	if len(blocked[0].Blockers) != 1 || blocked[0].Blockers[0].ID != issueB {
+		t.Fatalf("expected blocker %s", issueB)
+	}
+	if err := AppendEvent(root, NewCloseEvent(issueB, "2024-01-02T00:01:06Z")); err != nil {
+		t.Fatalf("append close B: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache after close: %v", err)
+	}
+	blocked, err = ListBlockedIssues(root)
+	if err != nil {
+		t.Fatalf("list blocked after close: %v", err)
+	}
+	if len(blocked) != 0 {
+		t.Fatalf("expected no blocked issues after close")
 	}
 }
 
