@@ -289,3 +289,6 @@
 {"type":"status_update","timestamp":"2026-01-21T03:33:42.687241Z","issue_id":"pb-b32","payload":{"status":"open"}}
 {"type":"status_update","timestamp":"2026-01-21T03:33:45.529195Z","issue_id":"pb-b32","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-21T03:38:46.283819Z","issue_id":"pb-b32","payload":{}}
+{"type":"create","timestamp":"2026-01-21T17:11:10.851111Z","issue_id":"pb-f42","payload":{"description":"Update CHANGELOG for 0.4.0, tag release, and run scripts/release.sh v0.4.0.","priority":"1","title":"Cut v0.4.0 release","type":"task"}}
+{"type":"status_update","timestamp":"2026-01-21T17:11:15.116199Z","issue_id":"pb-f42","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-21T17:12:16.63905Z","issue_id":"pb-f42","payload":{}}
