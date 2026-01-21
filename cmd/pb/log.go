@@ -528,15 +528,15 @@ func logEventTypeColor(eventType string) string {
 	// Keep event colors distinct so each log entry is easy to scan.
 	switch strings.ToLower(eventType) {
 	case "create":
-		return ansiBrightBlue
+		return ansiBrightGreen
 	case "status":
 		return ansiBrightYellow
 	case "update":
-		return ansiBrightCyan
+		return ansiBrightBlue
 	case "close":
-		return ansiBrightGreen
-	case "comment":
 		return ansiBrightMagenta
+	case "comment":
+		return ansiBrightCyan
 	case "dep_add":
 		return ansiBrightWhite
 	case "dep_rm":
@@ -551,9 +551,24 @@ func renderLogEventType(eventType string) string {
 	return colorize(eventType, ansiBold+logEventTypeColor(eventType))
 }
 
+// renderLogHeaderLabel applies high-contrast styling to the log header label.
+func renderLogHeaderLabel(label string) string {
+	return colorize(label, ansiBold+ansiBrightYellow)
+}
+
+// renderLogLineNumber returns a colored line number for log output.
+func renderLogLineNumber(line int) string {
+	return colorize(strconv.Itoa(line), ansiBold+ansiBrightWhite)
+}
+
 // renderLogLabel applies high-contrast styling to log field labels.
 func renderLogLabel(label string) string {
-	return colorize(label, ansiBrightCyan)
+	return colorize(label, ansiBold+ansiBrightBlue)
+}
+
+// renderLogValue applies high-contrast styling to log field values.
+func renderLogValue(value string) string {
+	return colorize(value, ansiBrightWhite)
 }
 
 // renderLogIssueID returns a colored issue ID for log output.
@@ -589,7 +604,7 @@ func renderLogDetailValue(key, value string) string {
 	case "depends_on":
 		return renderLogIssueID(value)
 	default:
-		return colorize(value, ansiBrightWhite)
+		return renderLogValue(value)
 	}
 }
 
@@ -597,11 +612,11 @@ func renderLogDetailValue(key, value string) string {
 func formatPrettyLog(entry logEntry, line logLine) string {
 	var output strings.Builder
 	// Header line includes the log line number, event type, and issue id.
-	output.WriteString(fmt.Sprintf("%s %d %s %s\n", renderLogLabel("event"), entry.Entry.Line, renderLogEventType(line.EventType), renderLogIssueID(line.IssueID)))
+	output.WriteString(fmt.Sprintf("%s %s %s %s\n", renderLogHeaderLabel("event"), renderLogLineNumber(entry.Entry.Line), renderLogEventType(line.EventType), renderLogIssueID(line.IssueID)))
 	// Add core metadata lines with aligned labels.
 	output.WriteString(fmt.Sprintf("%s %s\n", renderLogLabel("Title:"), colorize(line.IssueTitle, ansiBold+ansiBrightWhite)))
-	output.WriteString(fmt.Sprintf("%s  %s\n", renderLogLabel("When:"), line.EventTime))
-	output.WriteString(fmt.Sprintf("%s %s (%s)\n", renderLogLabel("Actor:"), line.Actor, line.ActorDate))
+	output.WriteString(fmt.Sprintf("%s  %s\n", renderLogLabel("When:"), renderLogValue(line.EventTime)))
+	output.WriteString(fmt.Sprintf("%s %s (%s)\n", renderLogLabel("Actor:"), renderLogValue(line.Actor), renderLogValue(line.ActorDate)))
 	// Render payload details with indentation or an explicit none marker.
 	details := logEventDetailSections(entry.Entry.Event)
 	if len(details.Lines) == 0 && details.Description == "" {

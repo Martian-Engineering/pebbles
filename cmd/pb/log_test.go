@@ -299,11 +299,14 @@ func TestFormatPrettyLogColors(t *testing.T) {
 		IssueTitle: "Pretty Log",
 	}
 	output := formatPrettyLog(entry, line)
-	if !strings.Contains(output, ansiBrightBlue) {
+	if !strings.Contains(output, ansiBrightGreen) {
 		t.Fatalf("expected event type color in output: %q", output)
 	}
-	if !strings.Contains(output, ansiBrightCyan) {
-		t.Fatalf("expected issue id color in output: %q", output)
+	if !strings.Contains(output, ansiBrightBlue) {
+		t.Fatalf("expected label color in output: %q", output)
+	}
+	if !strings.Contains(output, ansiBrightWhite) {
+		t.Fatalf("expected value color in output: %q", output)
 	}
 	if !strings.Contains(output, ansiBold) {
 		t.Fatalf("expected title color in output: %q", output)
