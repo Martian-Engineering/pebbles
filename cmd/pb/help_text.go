@@ -150,20 +150,24 @@ Usage:
   pb update <id> --status in_progress
   pb update <id> --type bug --priority P1
   pb update --description "Updated scope" <id>
+  pb update <id> --parent pb-epic
 
 Flags:
   --status <status>      New status (open, in_progress, closed). Example: --status in_progress
   --type <type>          Replace issue type (free-form). Example: --type chore
   --description <text>   Replace description (Markdown ok). Example: --description "New details"
   --priority <P0-P4>     Replace priority (P0-P4 or 0-4). Example: --priority P0
+  --parent <id|none>     Replace parent issue. Example: --parent pb-epic
 
 Details:
   - You can update multiple fields in one command.
   - Setting status to closed sets closed_at; other statuses clear closed_at.
+  - Clear the parent with --parent none (or --parent "").
 
 Workflows:
   - Start work: pb update <id> --status in_progress
   - Raise priority: pb update <id> --priority P1
+  - Set parent: pb update <id> --parent pb-epic
 `
 
 const closeHelp = `Close an issue.

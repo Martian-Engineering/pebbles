@@ -328,9 +328,11 @@ func runUpdate(root string, args []string) {
 	var issueType optionalString
 	var description optionalString
 	var priority optionalString
+	var parent optionalString
 	fs.Var(&issueType, "type", "New issue type")
 	fs.Var(&description, "description", "New description")
 	fs.Var(&priority, "priority", "New priority (P0-P4)")
+	fs.Var(&parent, "parent", "Replace parent issue (use \"none\" to clear)")
 	// Support `pb update <id> --status ...` by moving the id to the end.
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		args = append(args[1:], args[0])
@@ -343,7 +345,7 @@ func runUpdate(root string, args []string) {
 	if fs.NArg() != 1 {
 		exitError(fmt.Errorf("update requires issue id"))
 	}
-	if strings.TrimSpace(*status) == "" && !issueType.set && !description.set && !priority.set {
+	if strings.TrimSpace(*status) == "" && !issueType.set && !description.set && !priority.set && !parent.set {
 		exitError(fmt.Errorf("at least one field is required"))
 	}
 	if issueType.set && strings.TrimSpace(issueType.value) == "" {
@@ -354,16 +356,15 @@ func runUpdate(root string, args []string) {
 	}
 	id := fs.Arg(0)
 	// Confirm the issue exists in the cache.
-	if _, _, err := pebbles.GetIssue(root, id); err != nil {
+	issue, _, err := pebbles.GetIssue(root, id)
+	if err != nil {
 		exitError(err)
 	}
+	id = issue.ID
 	timestamp := pebbles.NowTimestamp()
+	var events []pebbles.Event
 	if strings.TrimSpace(*status) != "" {
-		event := pebbles.NewStatusEvent(id, *status, timestamp)
-		// Append the event and rebuild the cache for consistency.
-		if err := pebbles.AppendEvent(root, event); err != nil {
-			exitError(err)
-		}
+		events = append(events, pebbles.NewStatusEvent(id, *status, timestamp))
 	}
 	updatePayload := make(map[string]string)
 	if issueType.set {
@@ -380,7 +381,41 @@ func runUpdate(root string, args []string) {
 		updatePayload["priority"] = fmt.Sprintf("%d", parsed)
 	}
 	if len(updatePayload) > 0 {
-		event := pebbles.NewUpdateEvent(id, timestamp, updatePayload)
+		events = append(events, pebbles.NewUpdateEvent(id, timestamp, updatePayload))
+	}
+	if parent.set {
+		trimmedParent := strings.TrimSpace(parent.value)
+		clearParent := trimmedParent == "" || strings.EqualFold(trimmedParent, "none")
+		var parentIssue pebbles.Issue
+		if !clearParent {
+			parentIssue, _, err = pebbles.GetIssue(root, trimmedParent)
+			if err != nil {
+				exitError(err)
+			}
+			if parentIssue.ID == issue.ID {
+				exitError(fmt.Errorf("parent must be different from issue %s", issue.ID))
+			}
+		}
+		hierarchy, err := pebbles.GetIssueHierarchy(root, issue.ID)
+		if err != nil {
+			exitError(err)
+		}
+		for _, existingParent := range issueIDsFromIssues(hierarchy.Parents) {
+			events = append(events, pebbles.NewDepRemoveEvent(issue.ID, existingParent, pebbles.DepTypeParentChild, timestamp))
+		}
+		if !clearParent {
+			childID := issue.ID
+			if !pebbles.HasParentChildSuffix(parentIssue.ID, childID) {
+				childID, err = pebbles.NextChildIssueID(root, parentIssue.ID)
+				if err != nil {
+					exitError(err)
+				}
+				events = append(events, pebbles.NewRenameEvent(issue.ID, childID, timestamp))
+			}
+			events = append(events, pebbles.NewDepAddEvent(childID, parentIssue.ID, pebbles.DepTypeParentChild, timestamp))
+		}
+	}
+	for _, event := range events {
 		if err := pebbles.AppendEvent(root, event); err != nil {
 			exitError(err)
 		}
@@ -959,6 +994,13 @@ func printIssue(root string, issue pebbles.Issue, hierarchy pebbles.IssueHierarc
 	fmt.Println(header)
 	// Core metadata block.
 	fmt.Printf("Type: %s\n", renderIssueType(issue.IssueType))
+	if len(hierarchy.Parents) > 0 {
+		label := "Parent"
+		if len(hierarchy.Parents) > 1 {
+			label = "Parents"
+		}
+		fmt.Printf("%s: %s\n", label, strings.Join(issueIDsFromIssues(hierarchy.Parents), ", "))
+	}
 	fmt.Printf(
 		"Created: %s · Updated: %s\n\n",
 		formatDate(issue.CreatedAt),
