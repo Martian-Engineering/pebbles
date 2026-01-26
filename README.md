@@ -74,6 +74,9 @@ pb version
 
 # Update status and fields
 pb update pb-abc --status in_progress --type bug --priority P1 --description "Investigate regressions"
+# Set or clear a parent
+pb update pb-abc --parent pb-epic
+pb update pb-abc --parent none
 
 # Close an issue
 pb close pb-abc

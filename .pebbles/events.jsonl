@@ -292,3 +292,6 @@
 {"type":"create","timestamp":"2026-01-21T17:11:10.851111Z","issue_id":"pb-f42","payload":{"description":"Update CHANGELOG for 0.4.0, tag release, and run scripts/release.sh v0.4.0.","priority":"1","title":"Cut v0.4.0 release","type":"task"}}
 {"type":"status_update","timestamp":"2026-01-21T17:11:15.116199Z","issue_id":"pb-f42","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-21T17:12:16.63905Z","issue_id":"pb-f42","payload":{}}
+{"type":"create","timestamp":"2026-01-23T22:04:09.803613Z","issue_id":"pb-533","payload":{"description":"Support --parent on pb update (set/clear parent), validate parent exists and not self, record event, reflect in model and show/list output, update help/docs.","priority":"2","title":"Add parent flag to pb update","type":"task"}}
+{"type":"status_update","timestamp":"2026-01-23T22:04:13.49696Z","issue_id":"pb-533","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-01-24T01:44:50.295883Z","issue_id":"pb-533","payload":{}}
