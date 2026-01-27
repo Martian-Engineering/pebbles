@@ -173,16 +173,18 @@ Workflows:
   - Set parent: pb update <id> --parent pb-epic
 `
 
-const closeHelp = `Close an issue.
+const closeHelp = `Close one or more issues.
 
 Usage:
-  pb close <id>
+  pb close <id> [<id>...]
 
 Details:
-  - Sets status to closed and updates closed_at.
+  - Sets status to closed and updates closed_at for each issue.
+  - All issues are validated before any are closed.
 
 Workflows:
   - Finish work: pb close pb-123
+  - Close multiple: pb close pb-123 pb-124 pb-125
 `
 
 const reopenHelp = `Reopen a closed issue.
