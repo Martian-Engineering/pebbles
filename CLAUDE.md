@@ -113,6 +113,16 @@ When bugs, inconsistencies, or improvements are discovered during development:
 4. **Don't let issues block current work**: If the discovered issue isn't critical, create it and continue with the current task
 5. **Document what was found**: Include enough detail in the issue description for someone else (or future you) to understand the problem
 
+### Committing Pebbles Data
+
+**IMPORTANT**: Always commit `.pebbles/events.jsonl` as part of your workflow.
+
+The pebbles event log is the source of truth for issue tracking and should be version-controlled alongside your code. Commit pebbles changes:
+- After creating new issues
+- After closing issues
+- After any status updates
+- As part of your feature commits (include pebbles changes in the same commit or a separate tracking commit)
+
 Examples of when to create issues:
 - User testing reveals unexpected behavior
 - Inconsistent UI/UX patterns across screens
