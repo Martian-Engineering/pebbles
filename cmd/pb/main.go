@@ -430,23 +430,31 @@ func runClose(root string, args []string) {
 	fs := flag.NewFlagSet("close", flag.ExitOnError)
 	setFlagUsage(fs, closeHelp)
 	_ = fs.Parse(args)
-	// Validate inputs before closing the issue.
+	// Validate inputs before closing the issues.
 	if err := ensureProject(root); err != nil {
 		exitError(err)
 	}
-	if fs.NArg() != 1 {
-		exitError(fmt.Errorf("close requires issue id"))
+	if fs.NArg() < 1 {
+		exitError(fmt.Errorf("close requires at least one issue id"))
 	}
-	id := fs.Arg(0)
-	// Confirm the issue exists in the cache.
-	if _, _, err := pebbles.GetIssue(root, id); err != nil {
-		exitError(err)
+	// Validate all issues exist before writing any events.
+	ids := make([]string, fs.NArg())
+	for i := 0; i < fs.NArg(); i++ {
+		issue, _, err := pebbles.GetIssue(root, fs.Arg(i))
+		if err != nil {
+			exitError(err)
+		}
+		ids[i] = issue.ID
 	}
-	event := pebbles.NewCloseEvent(id, pebbles.NowTimestamp())
-	// Append the close event and rebuild the cache.
-	if err := pebbles.AppendEvent(root, event); err != nil {
-		exitError(err)
+	// Append close events for each issue.
+	timestamp := pebbles.NowTimestamp()
+	for _, id := range ids {
+		event := pebbles.NewCloseEvent(id, timestamp)
+		if err := pebbles.AppendEvent(root, event); err != nil {
+			exitError(err)
+		}
 	}
+	// Rebuild the cache once after all events are written.
 	if err := pebbles.RebuildCache(root); err != nil {
 		exitError(err)
 	}
