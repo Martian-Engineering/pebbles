@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -67,6 +68,8 @@ func main() {
 		runRenamePrefix(root, args)
 	case "log":
 		runLog(root, args)
+	case "sync":
+		runSync(root, args)
 	case "self-update":
 		runSelfUpdate(root, args)
 	case "help":
@@ -886,6 +889,57 @@ func runRenamePrefix(root string, args []string) {
 		exitError(err)
 	}
 	fmt.Printf("Renamed %d issues to %s\n", len(events), newPrefix)
+}
+
+// runSync handles pb sync.
+func runSync(root string, args []string) {
+	fs := flag.NewFlagSet("sync", flag.ExitOnError)
+	setFlagUsage(fs, syncHelp)
+	push := fs.Bool("push", false, "Push after committing")
+	_ = fs.Parse(args)
+	if err := ensureProject(root); err != nil {
+		exitError(err)
+	}
+	// Check if events.jsonl has uncommitted changes.
+	eventsPath := pebbles.EventsPath(root)
+	relPath, err := filepath.Rel(root, eventsPath)
+	if err != nil {
+		relPath = eventsPath
+	}
+	// Use git status --porcelain to check for changes.
+	statusCmd := exec.Command("git", "status", "--porcelain", relPath)
+	statusCmd.Dir = root
+	statusOutput, err := statusCmd.Output()
+	if err != nil {
+		exitError(fmt.Errorf("git status: %w", err))
+	}
+	// If no output, there's nothing to commit.
+	if len(strings.TrimSpace(string(statusOutput))) == 0 {
+		fmt.Println("Nothing to sync")
+		return
+	}
+	// Stage the events file.
+	addCmd := exec.Command("git", "add", relPath)
+	addCmd.Dir = root
+	if err := addCmd.Run(); err != nil {
+		exitError(fmt.Errorf("git add: %w", err))
+	}
+	// Commit with a standard message.
+	commitCmd := exec.Command("git", "commit", "-m", "pebbles: sync")
+	commitCmd.Dir = root
+	if err := commitCmd.Run(); err != nil {
+		exitError(fmt.Errorf("git commit: %w", err))
+	}
+	fmt.Println("Synced pebbles events")
+	// Optionally push if requested.
+	if *push {
+		pushCmd := exec.Command("git", "push")
+		pushCmd.Dir = root
+		if err := pushCmd.Run(); err != nil {
+			exitError(fmt.Errorf("git push: %w", err))
+		}
+		fmt.Println("Pushed to remote")
+	}
 }
 
 // ensureProject checks that the .pebbles directory exists.

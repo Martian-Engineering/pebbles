@@ -49,6 +49,9 @@ Dependencies:
 Prefixes:
   prefix set     Update the prefix used for new ids
 
+Git Integration:
+  sync           Commit pebbles events for worktree visibility
+
 Setup:
   init           Initialize a pebbles project
   self-update    Check for updates and install the latest release
@@ -422,6 +425,25 @@ Details:
 
 Workflows:
   - Verify before updating: pb self-update --check
+`
+
+const syncHelp = `Commit pebbles events to make them visible across worktrees.
+
+Usage:
+  pb sync
+  pb sync --push
+
+Flags:
+  --push   Push to remote after committing. Example: --push
+
+Details:
+  - Commits .pebbles/events.jsonl with message "pebbles: sync".
+  - Idempotent: does nothing if there are no uncommitted changes.
+  - Does NOT push by default (avoids merge conflicts).
+
+Workflows:
+  - Sync after creating issues: pb sync
+  - Sync and push: pb sync --push
 `
 
 func setFlagUsage(fs *flag.FlagSet, help string) {
