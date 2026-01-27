@@ -439,7 +439,7 @@ Flags:
 Details:
   - Commits .pebbles/events.jsonl with message "pebbles: sync".
   - Idempotent: does nothing if there are no uncommitted changes.
-  - Does NOT push by default (avoids merge conflicts).
+  - Does NOT push by default
 
 Workflows:
   - Sync after creating issues: pb sync
