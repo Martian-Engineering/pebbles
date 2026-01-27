@@ -50,7 +50,7 @@ Prefixes:
   prefix set     Update the prefix used for new ids
 
 Git Integration:
-  sync           Commit pebbles events for worktree visibility
+  sync           Commit pebbles events to git
 
 Setup:
   init           Initialize a pebbles project
