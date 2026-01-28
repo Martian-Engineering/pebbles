@@ -1,9 +1,17 @@
 package pebbles
 
-import "path/filepath"
+import (
+	"os"
+	"path/filepath"
+)
 
 // PebblesDir returns the .pebbles directory path for a project root.
 func PebblesDir(root string) string {
+	if envDir := os.Getenv("PEBBLES_DIR"); envDir != "" {
+		if info, err := os.Stat(envDir); err == nil && info.IsDir() {
+			return envDir
+		}
+	}
 	return filepath.Join(root, ".pebbles")
 }
 
