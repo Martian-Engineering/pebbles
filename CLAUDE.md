@@ -11,13 +11,20 @@ We track work in Pebbles instead of Markdown. Here are some of the key commands:
 
 ```bash
 pb help                    # Show CLI usage
-pb list                    # List all issues
+pb list                    # List open/in_progress issues (default)
+pb list --all              # List ALL issues including closed
+pb list --status closed    # Filter by specific status
 pb ready                   # Show issues ready to work (no blockers)
 pb show <issue-id>         # Show issue details
 pb update <issue-id> --status in_progress
+pb update <issue-id> --title "New title"  # Update issue title
 pb close <issue-id>
 pb dep tree <issue-id>     # Visualize dependencies
 ```
+
+**Note:** `pb list` defaults to showing only open and in_progress issues. Use `--all` to include closed issues, or `--status <status>` to filter by a specific status.
+
+**Environment:** Set `PEBBLES_DIR` to override the default `.pebbles` directory. Useful in worktree workflows where you want to point to the main repo's pebbles data.
 
 You should generally begin by running `pb help`.
 
