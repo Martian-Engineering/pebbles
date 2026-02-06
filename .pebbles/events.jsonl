@@ -311,3 +311,58 @@
 {"type":"create","timestamp":"2026-01-28T18:00:06.211197Z","issue_id":"pb-9a2","payload":{"description":"When claude-team spawns workers in git worktrees, each worktree gets a snapshot of .pebbles/ at creation time. This causes issues:\n\n1. **Issues created after worktree creation aren't visible to workers** — A coordinator creates an issue in main, spawns a worker, but the worker can't find the issue because their worktree has a stale .pebbles copy\n\n2. **Worker status updates don't sync back** — If a worker runs `pb update \u003cid\u003e --status in_progress`, it updates their local .pebbles, not the main repo's\n\n3. **The coordinator and workers are operating on different issue states**\n\n## Solution\n\nAdd PEBBLES_DIR env var support. When set, pebbles uses that directory instead of walking up from cwd to find .pebbles/.\n\n**Implementation:** ~10 lines — check `os.Getenv(\"PEBBLES_DIR\")` before the current walk-up logic. If set and valid, use it.\n\n**Usage in claude-team:**\n```bash\ncd /worktree/path \u0026\u0026 PEBBLES_DIR=/main/repo/.pebbles codex\n```\n\nWorkers would then:\n- See newly created issues (even uncommitted in main)\n- Have their status updates immediately visible to coordinator\n- Share a single source of truth for issue state","priority":"1","title":"Add PEBBLES_DIR env var support for worktree workflows","type":"feature"}}
 {"type":"status_update","timestamp":"2026-01-28T18:02:08.188722Z","issue_id":"pb-9a2","payload":{"status":"in_progress"}}
 {"type":"close","timestamp":"2026-01-28T18:05:52.855406Z","issue_id":"pb-9a2","payload":{}}
+{"type":"create","timestamp":"2026-02-05T23:59:05.342134Z","issue_id":"pb-831","payload":{"description":"Currently `pb update` supports --status, --type, --description, --priority, and --parent, but there's no way to update an issue's title after creation. Add a `--title` flag to `pb update` that appends a title_updated event to the issue log.","priority":"2","title":"pb update --title: allow updating issue title","type":"feature"}}
+{"type":"status_update","timestamp":"2026-02-05T23:59:47.912524Z","issue_id":"pb-831","payload":{"status":"in_progress"}}
+{"type":"create","timestamp":"2024-01-01T00:00:00Z","issue_id":"zz-1a","payload":{"description":"","priority":"2","title":"Open issue","type":"task"}}
+{"type":"create","timestamp":"2024-01-06T00:00:00Z","issue_id":"pb-parent","payload":{"description":"","priority":"2","title":"Parent","type":"task"}}
+{"type":"create","timestamp":"2024-01-06T00:00:01Z","issue_id":"pb-parent.1","payload":{"description":"","priority":"2","title":"Child 1","type":"task"}}
+{"type":"create","timestamp":"2024-01-06T00:00:02Z","issue_id":"pb-parent.2","payload":{"description":"","priority":"2","title":"Child 2","type":"task"}}
+{"type":"create","timestamp":"2024-01-06T00:00:03Z","issue_id":"pb-parent.3","payload":{"description":"","priority":"2","title":"Child 3","type":"task"}}
+{"type":"dep_add","timestamp":"2024-01-06T00:00:04Z","issue_id":"pb-parent.1","payload":{"dep_type":"parent-child","depends_on":"pb-parent"}}
+{"type":"dep_add","timestamp":"2024-01-06T00:00:05Z","issue_id":"pb-parent.3","payload":{"dep_type":"parent-child","depends_on":"pb-parent"}}
+{"type":"create","timestamp":"2024-02-01T00:00:00Z","issue_id":"pb-log-1","payload":{"description":"","priority":"2","title":"Log One","type":"task"}}
+{"type":"status_update","timestamp":"2024-02-01T00:01:00Z","issue_id":"pb-log-1","payload":{"status":"in_progress"}}
+{"type":"create","timestamp":"2024-02-02T12:00:00Z","issue_id":"pb-log-2","payload":{"description":"","priority":"2","title":"Log Two","type":"task"}}
+
+
+{"type":"close","timestamp":"2024-02-02T13:00:00Z","issue_id":"pb-log-2","payload":{}}
+{"type":"create","timestamp":"2024-01-01T00:00:00Z","issue_id":"pb-aaaa","payload":{"description":"Desc","priority":"2","title":"First","type":"task"}}
+{"type":"create","timestamp":"2024-01-01T00:00:00Z","issue_id":"pb-reopen","payload":{"description":"","priority":"2","title":"Reopen","type":"task"}}
+{"type":"close","timestamp":"2024-01-01T01:00:00Z","issue_id":"pb-reopen","payload":{}}
+{"type":"status_update","timestamp":"2024-01-01T02:00:00Z","issue_id":"pb-reopen","payload":{"status":"open"}}
+{"type":"create","timestamp":"2024-01-07T00:00:00Z","issue_id":"pb-comment","payload":{"description":"","priority":"2","title":"Commented","type":"task"}}
+{"type":"comment","timestamp":"2024-01-07T00:00:01Z","issue_id":"pb-comment","payload":{"body":"First note"}}
+{"type":"rename","timestamp":"2024-01-07T00:00:02Z","issue_id":"pb-comment","payload":{"new_id":"pb-comment-new"}}
+{"type":"comment","timestamp":"2024-01-07T00:00:03Z","issue_id":"pb-comment","payload":{"body":"Second note"}}
+{"type":"create","timestamp":"2024-01-04T00:00:00Z","issue_id":"pb-old","payload":{"description":"","priority":"2","title":"First","type":"task"}}
+{"type":"rename","timestamp":"2024-01-04T01:00:00Z","issue_id":"pb-old","payload":{"new_id":"pb-new"}}
+{"type":"status_update","timestamp":"2024-01-04T02:00:00Z","issue_id":"pb-old","payload":{"status":"in_progress"}}
+{"type":"create","timestamp":"2024-01-05T00:00:00Z","issue_id":"pb-dep-a","payload":{"description":"","priority":"2","title":"Issue A","type":"task"}}
+{"type":"create","timestamp":"2024-01-05T00:00:01Z","issue_id":"pb-dep-b","payload":{"description":"","priority":"2","title":"Issue B","type":"task"}}
+{"type":"dep_add","timestamp":"2024-01-05T00:00:02Z","issue_id":"pb-dep-a","payload":{"dep_type":"blocks","depends_on":"pb-dep-b"}}
+{"type":"rename","timestamp":"2024-01-05T00:00:03Z","issue_id":"pb-dep-b","payload":{"new_id":"pb-dep-new"}}
+{"type":"create","timestamp":"2024-01-02T00:00:00Z","issue_id":"pb-issue-a","payload":{"description":"","priority":"2","title":"Issue A","type":"task"}}
+{"type":"create","timestamp":"2024-01-02T00:00:01Z","issue_id":"pb-issue-b","payload":{"description":"","priority":"2","title":"Issue B","type":"task"}}
+{"type":"create","timestamp":"2024-01-02T00:00:02Z","issue_id":"pb-issue-c","payload":{"description":"","priority":"2","title":"Issue C","type":"task"}}
+{"type":"dep_add","timestamp":"2024-01-02T00:00:03Z","issue_id":"pb-issue-a","payload":{"dep_type":"blocks","depends_on":"pb-issue-b"}}
+{"type":"dep_add","timestamp":"2024-01-02T00:00:04Z","issue_id":"pb-issue-c","payload":{"dep_type":"parent-child","depends_on":"pb-issue-b"}}
+{"type":"create","timestamp":"2024-01-02T00:01:00Z","issue_id":"pb-blocked-a","payload":{"description":"","priority":"2","title":"Issue A","type":"task"}}
+{"type":"create","timestamp":"2024-01-02T00:01:01Z","issue_id":"pb-blocked-b","payload":{"description":"","priority":"2","title":"Issue B","type":"task"}}
+{"type":"create","timestamp":"2024-01-02T00:01:02Z","issue_id":"pb-blocked-c","payload":{"description":"","priority":"2","title":"Issue C","type":"task"}}
+{"type":"dep_add","timestamp":"2024-01-02T00:01:03Z","issue_id":"pb-blocked-a","payload":{"dep_type":"blocks","depends_on":"pb-blocked-b"}}
+{"type":"dep_add","timestamp":"2024-01-02T00:01:04Z","issue_id":"pb-blocked-c","payload":{"dep_type":"blocks","depends_on":"pb-blocked-b"}}
+{"type":"close","timestamp":"2024-01-02T00:01:05Z","issue_id":"pb-blocked-c","payload":{}}
+{"type":"create","timestamp":"2024-01-03T00:00:00Z","issue_id":"pb-tree-a","payload":{"description":"","priority":"2","title":"Issue A","type":"task"}}
+{"type":"create","timestamp":"2024-01-03T00:00:01Z","issue_id":"pb-tree-b","payload":{"description":"","priority":"2","title":"Issue B","type":"task"}}
+{"type":"create","timestamp":"2024-01-03T00:00:02Z","issue_id":"pb-tree-c","payload":{"description":"","priority":"2","title":"Issue C","type":"task"}}
+{"type":"dep_add","timestamp":"2024-01-03T00:00:03Z","issue_id":"pb-tree-a","payload":{"dep_type":"blocks","depends_on":"pb-tree-b"}}
+{"type":"dep_add","timestamp":"2024-01-03T00:00:04Z","issue_id":"pb-tree-b","payload":{"dep_type":"blocks","depends_on":"pb-tree-c"}}
+{"type":"create","timestamp":"2024-01-06T00:00:00Z","issue_id":"pb-parent","payload":{"description":"","priority":"2","title":"Parent","type":"task"}}
+{"type":"create","timestamp":"2024-01-06T00:00:01Z","issue_id":"pb-child-a","payload":{"description":"","priority":"2","title":"Child A","type":"task"}}
+{"type":"create","timestamp":"2024-01-06T00:00:02Z","issue_id":"pb-child-b","payload":{"description":"","priority":"2","title":"Child B","type":"task"}}
+{"type":"create","timestamp":"2024-01-06T00:00:03Z","issue_id":"pb-grandchild","payload":{"description":"","priority":"2","title":"Grandchild","type":"task"}}
+{"type":"create","timestamp":"2024-01-06T00:00:04Z","issue_id":"pb-root","payload":{"description":"","priority":"2","title":"Root","type":"task"}}
+{"type":"dep_add","timestamp":"2024-01-06T00:00:05Z","issue_id":"pb-child-a","payload":{"dep_type":"parent-child","depends_on":"pb-parent"}}
+{"type":"dep_add","timestamp":"2024-01-06T00:00:06Z","issue_id":"pb-child-b","payload":{"dep_type":"parent-child","depends_on":"pb-parent"}}
+{"type":"dep_add","timestamp":"2024-01-06T00:00:07Z","issue_id":"pb-grandchild","payload":{"dep_type":"parent-child","depends_on":"pb-child-a"}}
+{"type":"close","timestamp":"2026-02-06T00:14:52.629763Z","issue_id":"pb-831","payload":{}}
