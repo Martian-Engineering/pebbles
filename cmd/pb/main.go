@@ -169,6 +169,7 @@ func runList(root string, args []string) {
 	status := fs.String("status", "", "Filter by status (comma-separated)")
 	issueType := fs.String("type", "", "Filter by issue type (comma-separated)")
 	priority := fs.String("priority", "", "Filter by priority (P0-P4, comma-separated)")
+	all := fs.Bool("all", false, "Show all issues including closed")
 	stale := fs.Bool("stale", false, "Show stale issues (open with no activity for N days)")
 	staleDays := fs.Int("stale-days", 30, "Days without activity to mark an issue stale")
 	jsonOut := fs.Bool("json", false, "Output JSON")
@@ -181,6 +182,14 @@ func runList(root string, args []string) {
 	filters, err := parseListFilters(*status, *issueType, *priority)
 	if err != nil {
 		exitError(err)
+	}
+	// By default, hide closed issues unless the user explicitly requested a
+	// status filter or asked to show everything.
+	if !*all && filters.statuses == nil {
+		filters.statuses = map[string]bool{
+			pebbles.StatusOpen:       true,
+			pebbles.StatusInProgress: true,
+		}
 	}
 	if *blocked {
 		blockedIssues, err := pebbles.ListBlockedIssues(root)

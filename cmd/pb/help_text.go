@@ -106,6 +106,7 @@ const listHelp = `List issues with optional filters.
 
 Usage:
   pb list
+  pb list --all
   pb list --status open
   pb list --type bug,feature --priority P0,P1
   pb list --stale --stale-days 14
@@ -113,6 +114,7 @@ Usage:
   pb list --json
 
 Flags:
+  --all                              Show all issues, including closed. (Default: hide closed)
   --status <status>[,<status>...]   Filter by status (open, in_progress, closed; hyphens ok). Example: --status open,in-progress
   --type <type>[,<type>...]         Filter by type (case-insensitive). Example: --type bug,task
   --priority <P0-P4>[,<P0-P4>...]   Filter by priority (P0-P4 or 0-4). Example: --priority P0,P1
@@ -122,6 +124,7 @@ Flags:
   --json                            Output JSON array of issues (includes deps). Example: --json
 
 Details:
+  - Default output includes only open and in_progress issues.
   - Status filters accept "in-progress" as an alias for "in_progress".
 
 Workflows:

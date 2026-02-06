@@ -365,3 +365,5 @@
 {"type":"close","timestamp":"2026-02-06T00:14:52.629763Z","issue_id":"pb-831","payload":{}}
 {"type":"create","timestamp":"2026-02-06T02:01:06.85827Z","issue_id":"pb-1a3","payload":{"description":"pb list should default to showing only open issues. Add --all flag to show closed.","priority":"2","title":"Default pb list to open issues only","type":"feature"}}
 {"type": "create", "timestamp": "2026-02-06T02:01:14.108515+00:00", "issue_id": "pb-832", "payload": {"title": "pb list: default to showing only open issues", "description": "Currently pb list shows all issues regardless of status. It should default to showing only open issues (status != closed). Add a --all flag to show everything when needed. The current --status filter should continue to work as-is for specific status filtering.", "type": "feature", "priority": "2"}}
+{"type":"status_update","timestamp":"2026-02-06T02:07:44.280019Z","issue_id":"pb-832","payload":{"status":"in_progress"}}
+{"type":"close","timestamp":"2026-02-06T02:07:44.535038Z","issue_id":"pb-832","payload":{}}
