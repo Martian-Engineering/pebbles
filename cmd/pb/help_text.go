@@ -151,12 +151,14 @@ const updateHelp = `Update status or fields on an issue.
 
 Usage:
   pb update <id> --status in_progress
+  pb update <id> --title "New issue title"
   pb update <id> --type bug --priority P1
   pb update --description "Updated scope" <id>
   pb update <id> --parent pb-epic
 
 Flags:
   --status <status>      New status (open, in_progress, closed). Example: --status in_progress
+  --title <text>         Replace issue title. Example: --title "New title"
   --type <type>          Replace issue type (free-form). Example: --type chore
   --description <text>   Replace description (Markdown ok). Example: --description "New details"
   --priority <P0-P4>     Replace priority (P0-P4 or 0-4). Example: --priority P0

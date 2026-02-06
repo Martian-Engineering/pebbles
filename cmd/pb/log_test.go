@@ -38,6 +38,13 @@ func TestLogEventDetails(t *testing.T) {
 	if got := logEventDetails(create); got != `type=task priority=P1 description="Seed data"` {
 		t.Fatalf("create details mismatch: %q", got)
 	}
+	titleUpdated := pebbles.Event{
+		Type:    pebbles.EventTypeTitleUpdated,
+		Payload: map[string]string{"title": "New title"},
+	}
+	if got := logEventDetails(titleUpdated); got != `title="New title"` {
+		t.Fatalf("title_updated details mismatch: %q", got)
+	}
 	status := pebbles.Event{
 		Type:    pebbles.EventTypeStatus,
 		Payload: map[string]string{"status": "in_progress"},

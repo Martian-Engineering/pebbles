@@ -50,6 +50,8 @@ type Config struct {
 const (
 	// EventTypeCreate indicates a create event.
 	EventTypeCreate = "create"
+	// EventTypeTitleUpdated indicates an issue title update event.
+	EventTypeTitleUpdated = "title_updated"
 	// EventTypeStatus indicates a status update event.
 	EventTypeStatus = "status_update"
 	// EventTypeUpdate indicates an update to issue fields.

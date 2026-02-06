@@ -13,6 +13,12 @@ func NewCreateEvent(issueID, title, description, issueType, timestamp string, pr
 	return Event{Type: EventTypeCreate, Timestamp: timestamp, IssueID: issueID, Payload: payload}
 }
 
+// NewTitleUpdatedEvent builds a title update event.
+func NewTitleUpdatedEvent(issueID, title, timestamp string) Event {
+	payload := map[string]string{"title": title}
+	return Event{Type: EventTypeTitleUpdated, Timestamp: timestamp, IssueID: issueID, Payload: payload}
+}
+
 // NewStatusEvent builds a status update event.
 func NewStatusEvent(issueID, status, timestamp string) Event {
 	payload := map[string]string{"status": status}

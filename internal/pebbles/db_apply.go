@@ -72,6 +72,12 @@ func applyEvent(db *sql.DB, event Event) error {
 		return applyCreate(db, event)
 	case EventTypeRename:
 		return applyRename(db, event)
+	case EventTypeTitleUpdated:
+		resolved, err := resolveEventIssueID(db, event)
+		if err != nil {
+			return err
+		}
+		return applyTitleUpdated(db, resolved)
 	case EventTypeStatus:
 		resolved, err := resolveEventIssueID(db, event)
 		if err != nil {
@@ -111,6 +117,23 @@ func applyEvent(db *sql.DB, event Event) error {
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Type)
 	}
+}
+
+func applyTitleUpdated(db *sql.DB, event Event) error {
+	title := strings.TrimSpace(event.Payload["title"])
+	if title == "" {
+		return fmt.Errorf("title_updated event missing title")
+	}
+	result, err := db.Exec(
+		"UPDATE issues SET title = ?, updated_at = ? WHERE id = ?",
+		event.Payload["title"],
+		event.Timestamp,
+		event.IssueID,
+	)
+	if err != nil {
+		return fmt.Errorf("update title: %w", err)
+	}
+	return requireRow(result, "title update for missing issue")
 }
 
 // resolveEventIssueID returns a copy of the event with a resolved IssueID.
@@ -162,7 +185,7 @@ func applyCreate(db *sql.DB, event Event) error {
 	priority := parsePriority(event.Payload["priority"])
 	// Insert the new issue using the event timestamp.
 	_, err := db.Exec(
-		`INSERT INTO issues (id, title, description, issue_type, status, priority, created_at, updated_at, closed_at)
+		`INSERT OR IGNORE INTO issues (id, title, description, issue_type, status, priority, created_at, updated_at, closed_at)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, "")`,
 		event.IssueID,
 		title,

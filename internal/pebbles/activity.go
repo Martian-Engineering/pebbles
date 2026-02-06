@@ -44,7 +44,7 @@ func ListIssueActivity(root string) (map[string]time.Time, error) {
 // isActivityEvent reports whether an event should count toward issue activity.
 func isActivityEvent(eventType string) bool {
 	switch eventType {
-	case EventTypeCreate, EventTypeUpdate, EventTypeComment, EventTypeStatus, EventTypeClose:
+	case EventTypeCreate, EventTypeTitleUpdated, EventTypeUpdate, EventTypeComment, EventTypeStatus, EventTypeClose:
 		return true
 	default:
 		return false
