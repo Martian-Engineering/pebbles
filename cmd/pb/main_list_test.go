@@ -160,4 +160,3 @@ func TestListJSONRespectsDefaultAndAll(t *testing.T) {
 		t.Fatalf("expected --json --all output to include closed; ids=%v output=%q", ids, outAll)
 	}
 }
-

@@ -1472,6 +1472,7 @@ func issueLastActivity(issue pebbles.Issue, activityByID map[string]time.Time) (
 	}
 	return time.Time{}, fmt.Errorf("missing activity timestamp for %s", issue.ID)
 }
+
 // formatBlockedIssueLine appends blocker IDs to a list output line.
 func formatBlockedIssueLine(issue pebbles.Issue, blockers []pebbles.Issue, widths issueColumnWidths) string {
 	line := formatIssueLine(issue, 0, widths)
@@ -1493,6 +1494,7 @@ func blockedIssueIDs(blockers []pebbles.Issue) []string {
 	}
 	return ids
 }
+
 // formatDate renders a timestamp as YYYY-MM-DD when possible.
 func formatDate(timestamp string) string {
 	parsed, err := time.Parse(time.RFC3339Nano, timestamp)
