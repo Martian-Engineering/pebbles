@@ -366,3 +366,4 @@
 {"type":"dep_add","timestamp":"2024-01-06T00:00:06Z","issue_id":"pb-child-b","payload":{"dep_type":"parent-child","depends_on":"pb-parent"}}
 {"type":"dep_add","timestamp":"2024-01-06T00:00:07Z","issue_id":"pb-grandchild","payload":{"dep_type":"parent-child","depends_on":"pb-child-a"}}
 {"type":"close","timestamp":"2026-02-06T00:14:52.629763Z","issue_id":"pb-831","payload":{}}
+{"type":"create","timestamp":"2026-02-06T01:59:08.672462Z","issue_id":"pb-c1d","payload":{"description":"Currently pb list shows all issues regardless of status. It should default to showing only open issues (status != closed). Add a flag like --all or --include-closed to show everything when needed. The current --status filter should continue to work as-is for specific status filtering.","priority":"2","title":"pb list: default to showing only open issues","type":"feature"}}
