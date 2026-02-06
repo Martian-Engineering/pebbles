@@ -323,8 +323,6 @@
 {"type":"create","timestamp":"2024-02-01T00:00:00Z","issue_id":"pb-log-1","payload":{"description":"","priority":"2","title":"Log One","type":"task"}}
 {"type":"status_update","timestamp":"2024-02-01T00:01:00Z","issue_id":"pb-log-1","payload":{"status":"in_progress"}}
 {"type":"create","timestamp":"2024-02-02T12:00:00Z","issue_id":"pb-log-2","payload":{"description":"","priority":"2","title":"Log Two","type":"task"}}
-
-
 {"type":"close","timestamp":"2024-02-02T13:00:00Z","issue_id":"pb-log-2","payload":{}}
 {"type":"create","timestamp":"2024-01-01T00:00:00Z","issue_id":"pb-aaaa","payload":{"description":"Desc","priority":"2","title":"First","type":"task"}}
 {"type":"create","timestamp":"2024-01-01T00:00:00Z","issue_id":"pb-reopen","payload":{"description":"","priority":"2","title":"Reopen","type":"task"}}
@@ -357,7 +355,6 @@
 {"type":"create","timestamp":"2024-01-03T00:00:02Z","issue_id":"pb-tree-c","payload":{"description":"","priority":"2","title":"Issue C","type":"task"}}
 {"type":"dep_add","timestamp":"2024-01-03T00:00:03Z","issue_id":"pb-tree-a","payload":{"dep_type":"blocks","depends_on":"pb-tree-b"}}
 {"type":"dep_add","timestamp":"2024-01-03T00:00:04Z","issue_id":"pb-tree-b","payload":{"dep_type":"blocks","depends_on":"pb-tree-c"}}
-{"type":"create","timestamp":"2024-01-06T00:00:00Z","issue_id":"pb-parent","payload":{"description":"","priority":"2","title":"Parent","type":"task"}}
 {"type":"create","timestamp":"2024-01-06T00:00:01Z","issue_id":"pb-child-a","payload":{"description":"","priority":"2","title":"Child A","type":"task"}}
 {"type":"create","timestamp":"2024-01-06T00:00:02Z","issue_id":"pb-child-b","payload":{"description":"","priority":"2","title":"Child B","type":"task"}}
 {"type":"create","timestamp":"2024-01-06T00:00:03Z","issue_id":"pb-grandchild","payload":{"description":"","priority":"2","title":"Grandchild","type":"task"}}
