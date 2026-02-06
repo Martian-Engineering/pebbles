@@ -328,10 +328,12 @@ func runUpdate(root string, args []string) {
 	fs := flag.NewFlagSet("update", flag.ExitOnError)
 	setFlagUsage(fs, updateHelp)
 	status := fs.String("status", "", "New status")
+	var title optionalString
 	var issueType optionalString
 	var description optionalString
 	var priority optionalString
 	var parent optionalString
+	fs.Var(&title, "title", "New title")
 	fs.Var(&issueType, "type", "New issue type")
 	fs.Var(&description, "description", "New description")
 	fs.Var(&priority, "priority", "New priority (P0-P4)")
@@ -348,8 +350,11 @@ func runUpdate(root string, args []string) {
 	if fs.NArg() != 1 {
 		exitError(fmt.Errorf("update requires issue id"))
 	}
-	if strings.TrimSpace(*status) == "" && !issueType.set && !description.set && !priority.set && !parent.set {
+	if strings.TrimSpace(*status) == "" && !title.set && !issueType.set && !description.set && !priority.set && !parent.set {
 		exitError(fmt.Errorf("at least one field is required"))
+	}
+	if title.set && strings.TrimSpace(title.value) == "" {
+		exitError(fmt.Errorf("title cannot be empty"))
 	}
 	if issueType.set && strings.TrimSpace(issueType.value) == "" {
 		exitError(fmt.Errorf("type cannot be empty"))
@@ -368,6 +373,9 @@ func runUpdate(root string, args []string) {
 	var events []pebbles.Event
 	if strings.TrimSpace(*status) != "" {
 		events = append(events, pebbles.NewStatusEvent(id, *status, timestamp))
+	}
+	if title.set {
+		events = append(events, pebbles.NewTitleUpdatedEvent(id, title.value, timestamp))
 	}
 	updatePayload := make(map[string]string)
 	if issueType.set {

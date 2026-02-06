@@ -62,6 +62,20 @@ func TestCreateUpdateClose(t *testing.T) {
 	if issue.Description != "New description" {
 		t.Fatalf("expected updated description")
 	}
+	// Update title and verify it persists.
+	if err := AppendEvent(root, NewTitleUpdatedEvent(issueID, "Renamed", "2024-01-01T00:45:00Z")); err != nil {
+		t.Fatalf("append title update: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache after title update: %v", err)
+	}
+	issue, _, err = GetIssue(root, issueID)
+	if err != nil {
+		t.Fatalf("get issue after title update: %v", err)
+	}
+	if issue.Title != "Renamed" {
+		t.Fatalf("expected updated title")
+	}
 	// Update status and verify.
 	if err := AppendEvent(root, NewStatusEvent(issueID, "in_progress", "2024-01-01T01:00:00Z")); err != nil {
 		t.Fatalf("append status: %v", err)

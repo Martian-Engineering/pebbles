@@ -314,6 +314,8 @@ func logEventLabel(event pebbles.Event) string {
 	switch event.Type {
 	case pebbles.EventTypeCreate:
 		return "create"
+	case pebbles.EventTypeTitleUpdated:
+		return "title"
 	case pebbles.EventTypeStatus:
 		return "status"
 	case pebbles.EventTypeUpdate:
@@ -349,6 +351,10 @@ func logEventDetails(event pebbles.Event) string {
 			parts = append(parts, fmt.Sprintf("description=%s", formatPayloadValue("description", description)))
 		}
 		return strings.Join(parts, " ")
+	case pebbles.EventTypeTitleUpdated:
+		if title := event.Payload["title"]; title != "" {
+			return fmt.Sprintf("title=%s", formatPayloadValue("title", title))
+		}
 	case pebbles.EventTypeStatus:
 		if status := event.Payload["status"]; status != "" {
 			return fmt.Sprintf("status=%s", status)
@@ -406,6 +412,10 @@ func logEventDetailSections(event pebbles.Event) logDetailSections {
 		return logDetailSections{
 			Lines:       lines,
 			Description: logDetailDescription(event.Payload["description"]),
+		}
+	case pebbles.EventTypeTitleUpdated:
+		if title := event.Payload["title"]; title != "" {
+			return logDetailSections{Lines: []string{fmt.Sprintf("title=%s", formatPayloadValue("title", title))}}
 		}
 	case pebbles.EventTypeStatus:
 		if status := event.Payload["status"]; status != "" {

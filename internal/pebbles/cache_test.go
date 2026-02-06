@@ -27,3 +27,27 @@ func TestSortEventsOrdersRenameBeforeDeps(t *testing.T) {
 		}
 	}
 }
+
+func TestRebuildCacheIgnoresDuplicateCreateEvents(t *testing.T) {
+	root := t.TempDir()
+	if err := InitProject(root); err != nil {
+		t.Fatalf("init project: %v", err)
+	}
+	issueID := "pb-dupe"
+	if err := AppendEvent(root, NewCreateEvent(issueID, "First", "", "task", "2024-01-01T00:00:00Z", 2)); err != nil {
+		t.Fatalf("append create: %v", err)
+	}
+	if err := AppendEvent(root, NewCreateEvent(issueID, "First", "", "task", "2024-01-01T00:00:01Z", 2)); err != nil {
+		t.Fatalf("append duplicate create: %v", err)
+	}
+	if err := RebuildCache(root); err != nil {
+		t.Fatalf("rebuild cache: %v", err)
+	}
+	issues, err := ListIssues(root)
+	if err != nil {
+		t.Fatalf("list issues: %v", err)
+	}
+	if len(issues) != 1 {
+		t.Fatalf("expected 1 issue, got %d", len(issues))
+	}
+}
