@@ -70,6 +70,8 @@ func main() {
 		runLog(root, args)
 	case "sync":
 		runSync(root, args)
+	case "prime":
+		runPrime(root, args)
 	case "self-update":
 		runSelfUpdate(root, args)
 	case "help":
@@ -965,6 +967,14 @@ func runSync(root string, args []string) {
 		}
 		fmt.Println("Pushed to remote")
 	}
+}
+
+// runPrime prints workflow context for AI coding agents.
+func runPrime(root string, args []string) {
+	fs := flag.NewFlagSet("prime", flag.ExitOnError)
+	setFlagUsage(fs, primeHelp)
+	_ = fs.Parse(args)
+	fmt.Print(primeContext)
 }
 
 // ensureProject checks that the .pebbles directory exists.

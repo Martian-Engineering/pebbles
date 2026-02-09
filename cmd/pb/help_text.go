@@ -52,6 +52,9 @@ Prefixes:
 Git Integration:
   sync           Commit pebbles events to git
 
+AI Agent Integration:
+  prime          Print workflow context for AI coding agents
+
 Setup:
   init           Initialize a pebbles project
   self-update    Check for updates and install the latest release
@@ -451,6 +454,98 @@ Details:
 Workflows:
   - Sync after creating issues: pb sync
   - Sync and push: pb sync --push
+`
+
+const primeHelp = `Print workflow context for AI coding agents.
+
+Usage:
+  pb prime
+
+Details:
+  - Outputs a markdown prompt that teaches AI agents how to use Pebbles.
+  - Designed for use as a Claude Code hook (SessionStart, PreCompact)
+    or piped into any agent context window.
+  - Does not require an initialized project.
+
+Hook setup (Claude Code settings.json):
+  {
+    "hooks": {
+      "SessionStart": [{ "matcher": "", "hooks": [{ "type": "command", "command": "pb prime" }] }],
+      "PreCompact":   [{ "matcher": "", "hooks": [{ "type": "command", "command": "pb prime" }] }]
+    }
+  }
+
+Workflows:
+  - Inject context at session start: pb prime
+  - Pipe to clipboard: pb prime | pbcopy
+`
+
+const primeContext = `# Pebbles Workflow Context
+
+> **Context Recovery**: Run ` + "`pb prime`" + ` after compaction, clear, or new session.
+> Hooks auto-call this in Claude Code when configured.
+
+## Core Rules
+- Use Pebbles (pb) for issue tracking, not Markdown files or TodoWrite
+- Track strategic work in issues (multi-session, dependencies, discovered work)
+- Always create a Pebbles issue before starting work
+- Commit .pebbles/events.jsonl alongside your code changes
+
+## Essential Commands
+
+### Finding Work
+- ` + "`pb ready`" + ` - Show issues ready to work (no blockers)
+- ` + "`pb list`" + ` - List open/in_progress issues (default hides closed)
+- ` + "`pb list --all`" + ` - Show all issues including closed
+- ` + "`pb list --status in_progress`" + ` - Your active work
+- ` + "`pb show <id>`" + ` - Detailed issue view with dependencies
+
+### Creating & Updating
+- ` + "`pb create --title=\"...\" --type=task|bug|feature|epic --priority=P2`" + ` - New issue
+  - Priority: P0-P4 (or 0-4). P0=critical, P2=medium (default), P4=backlog
+- ` + "`pb update <id> --status=in_progress`" + ` - Claim work
+- ` + "`pb close <id>`" + ` - Mark complete
+- ` + "`pb close <id1> <id2> ...`" + ` - Close multiple issues at once
+- ` + "`pb comment <id> --body \"...\"`" + ` - Add a comment
+
+### Dependencies & Hierarchy
+- ` + "`pb dep add <issue> <depends-on>`" + ` - Add dependency (issue depends on depends-on)
+- ` + "`pb dep add --type parent-child <child> <parent>`" + ` - Create epic/subtask hierarchy
+- ` + "`pb dep tree <id>`" + ` - Visualize dependency tree
+- ` + "`pb list --blocked`" + ` - Show blocked issues
+
+### Git Integration
+- ` + "`pb sync`" + ` - Commit pebbles events to git
+- ` + "`pb sync --push`" + ` - Commit and push
+
+## Common Workflows
+
+**Starting work:**
+` + "```" + `
+pb ready                                    # Find available work
+pb show <id>                                # Review issue details
+pb update <id> --status in_progress         # Claim it
+` + "```" + `
+
+**Completing work:**
+` + "```" + `
+pb close <id>                               # Close completed issues
+git add . && git commit -m "..."            # Commit code + pebbles changes
+` + "```" + `
+
+**Creating dependent work:**
+` + "```" + `
+pb create --title="Implement feature X" --type=feature
+pb create --title="Write tests for X" --type=task
+pb dep add <tests-id> <feature-id>          # Tests depend on feature
+` + "```" + `
+
+**Epic workflow:**
+` + "```" + `
+pb create --title="Epic name" --type=epic
+pb create --title="Subtask 1" --type=task
+pb dep add --type parent-child <subtask-id> <epic-id>
+` + "```" + `
 `
 
 func setFlagUsage(fs *flag.FlagSet, help string) {
