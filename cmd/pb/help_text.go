@@ -50,7 +50,7 @@ Prefixes:
   prefix set     Update the prefix used for new ids
 
 Git Integration:
-  sync           Commit pebbles events to git
+  sync           Opt-in: commit pebbles events to git
 
 AI Agent Integration:
   prime          Print workflow context for AI coding agents
@@ -437,7 +437,7 @@ Workflows:
   - Verify before updating: pb self-update --check
 `
 
-const syncHelp = `Commit pebbles events to make them visible across worktrees.
+const syncHelp = `Explicitly commit pebbles events for projects that opt into shared tracking.
 
 Usage:
   pb sync
@@ -447,13 +447,15 @@ Flags:
   --push   Push to remote after committing. Example: --push
 
 Details:
+  - Local tracking is the default workflow; do not sync routine issue updates.
+  - Use only when the user or agreed project policy opts into shared tracking.
   - Commits .pebbles/events.jsonl with message "pebbles: sync".
   - Idempotent: does nothing if there are no uncommitted changes.
   - Does NOT push by default
 
 Workflows:
-  - Sync after creating issues: pb sync
-  - Sync and push: pb sync --push
+  - With shared tracking explicitly enabled: pb sync
+  - With additional push authorization: pb sync --push
 `
 
 const primeHelp = `Print workflow context for AI coding agents.
@@ -522,7 +524,8 @@ const primeContext = `# Pebbles Workflow Context
 - ` + "`pb dep rm <issue> <depends-on>`" + ` - Remove a dependency
 - ` + "`pb dep tree <id>`" + ` - Visualize dependency tree
 
-### Git Integration
+### Git Integration (opt-in)
+Keep issue state local by default. Run these commands only when the user or agreed project policy opts into shared tracking. Pushing requires authorization.
 - ` + "`pb sync`" + ` - Commit pebbles events to git
 - ` + "`pb sync --push`" + ` - Commit and push
 
