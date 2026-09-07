@@ -209,7 +209,15 @@ data is unavailable (or `--no-git` is used), they render as `unknown`.
 - Release notes live in `CHANGELOG.md`.
 - Release flow is documented in `docs/RELEASING.md`.
 
-## Sync Model
+## Local tracking by default
+
+Use Pebbles locally unless your project explicitly opts into sharing its issue state through Git. Routine issue updates do not require `pb sync`, a tracking commit, or a push. At Martian, client-project workflows use local tracking so internal issue state stays out of client repositories.
+
+For local tracking, add `.pebbles/` to the project root `.gitignore` or Git's local `info/exclude`. `pb init` creates a cache ignore rule inside `.pebbles/`; it does not ignore the entire directory for you. If Pebbles files are already tracked, an ignore rule alone is insufficient: deliberately remove them from the index while preserving local copies before treating the project as local-only. This does not erase earlier Git history.
+
+Shared tracking is opt-in. An explicitly agreed project policy can keep the event log and configuration in Git and use `pb sync` to commit changes. Keep the SQLite cache ignored. `pb sync --push` additionally publishes the commit and requires authorization to push. This is workflow guidance; the CLI's explicit sync command remains available.
+
+## Event log and cache
 
 - Commands append to `.pebbles/events.jsonl`, then rebuild `.pebbles/pebbles.db`.
 - The SQLite cache is rebuilt by replaying the full event log in order.

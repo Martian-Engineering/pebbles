@@ -120,15 +120,13 @@ When bugs, inconsistencies, or improvements are discovered during development:
 4. **Don't let issues block current work**: If the discovered issue isn't critical, create it and continue with the current task
 5. **Document what was found**: Include enough detail in the issue description for someone else (or future you) to understand the problem
 
-### Committing Pebbles Data
+### Local tracking and optional sync
 
-**IMPORTANT**: Always commit `.pebbles/events.jsonl` as part of your workflow.
+Keep Pebbles state local by default. Do not run `pb sync`, stage `.pebbles/`, or include its event log in application commits unless the user or the project's agreed policy explicitly opts into version-controlled issue tracking. Finishing an issue does not authorize syncing or pushing its state.
 
-The pebbles event log is the source of truth for issue tracking and should be version-controlled alongside your code. Commit pebbles changes:
-- After creating new issues
-- After closing issues
-- After any status updates
-- As part of your feature commits (include pebbles changes in the same commit or a separate tracking commit)
+For local tracking, ignore `.pebbles/` in the project root `.gitignore` or Git's local `info/exclude`. An ignore rule does not untrack existing files: when migrating a project to local-only tracking, remove its Pebbles files from the index while preserving the local copies, and review that migration separately from application changes.
+
+Projects that explicitly opt into shared tracking may commit the event log and configuration and use `pb sync`. Keep the SQLite cache ignored. Pushing also requires authorization; enabling shared tracking does not itself authorize a push.
 
 Examples of when to create issues:
 - User testing reveals unexpected behavior
