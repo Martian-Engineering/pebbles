@@ -221,7 +221,7 @@ func applyRename(db *sql.DB, event Event) error {
 		return fmt.Errorf("rename target already mapped to %s", resolvedNewID)
 	}
 	if resolvedOldID == newID {
-		return fmt.Errorf("rename target matches current id")
+		return nil // already applied; idempotent replay
 	}
 	if err := ensureIssueExists(db, resolvedOldID); err != nil {
 		return err
